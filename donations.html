@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Садака и отчёты</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Мечеть</div><span class="brand__sub">Вопросы • Опросы • Садака</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/questions.html">Вопрос Имаму</a>
+        <a href="/polls.html">Опросы</a>
+        <a href="/donations.html">Садака</a>
+        <a href="/sermons.html">Проповеди</a>
+        <a href="/schedule.html">Расписание</a>
+        <a href="/contacts.html">Контакты</a>
+        <a href="/admin/index.html">Админ</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Сборы (садака) и отчёты</h1>
+        <p>Активные кампании с прогресс-баром. Отчёты публикуются ниже.</p>
+      </div>
+      <a class="badge" href="/admin/donations.html">Управление →</a>
+    </div>
+
+    <section class="card">
+      <h3>Активные сборы</h3>
+      <div id="campaigns" class="list"></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section class="card card--subtle">
+      <h3>Отчёты</h3>
+      <div id="reports" class="list"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container"><div class="small">© Прототип</div></div>
+</footer>
+
+<script type="module">
+  import "./assets/js/app.js";
+  import "./assets/js/mock-api/seed.js";
+  import { KEYS, load } from "./assets/js/storage.js";
+  import { setHTML, escapeHTML, fmtDate } from "./assets/js/ui.js";
+
+  const camps = load(KEYS.campaigns, []);
+  const reports = load(KEYS.reports, []);
+
+  const active = camps.filter(c=>c.active);
+
+  const campsRoot = document.getElementById("campaigns");
+  if(!active.length){
+    setHTML(campsRoot, `<div class="notice">Нет активных кампаний.</div>`);
+  }else{
+    setHTML(campsRoot, active.map(c=>{
+      const pct = c.goal ? Math.min(100, Math.round((c.raised / c.goal) * 100)) : 0;
+      return `
+        <div class="item">
+          <div class="item__top">
+            <div style="flex:1">
+              <div class="item__title">${escapeHTML(c.title)}</div>
+              <div class="item__meta">${escapeHTML(c.details || "")}</div>
+              <div class="hr"></div>
+              <div class="progress"><div class="progress__bar" style="width:${pct}%"></div></div>
+              <div class="item__meta"><b>${c.raised.toLocaleString("ru-RU")}₽</b> из <b>${c.goal.toLocaleString("ru-RU")}₽</b> • ${pct}%</div>
+            </div>
+            <span class="pill">активно</span>
+          </div>
+        </div>
+      `;
+    }).join(""));
+  }
+
+  const repRoot = document.getElementById("reports");
+  if(!reports.length){
+    setHTML(repRoot, `<div class="notice">Отчётов пока нет.</div>`);
+  }else{
+    setHTML(repRoot, reports.map(r=>`
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(r.title)}</div>
+            <div class="item__meta">${fmtDate(r.createdAt)}${r.campaignId ? " • Кампания: " + escapeHTML(r.campaignTitle || "") : ""}</div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="small">${escapeHTML(r.text || "")}</div>
+        ${r.images?.length ? `<div class="hr"></div><div class="row">${r.images.map(u=>`<img src="${escapeHTML(u)}" alt="Фото отчёта" style="border-radius:14px;border:1px solid var(--border)">`).join("")}</div>` : ""}
+      </div>
+    `).join(""));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админка</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка (прототип)</div><span class="brand__sub">PIN по умолчанию: 1234</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Вход в админку</h1>
+        <p>Это демонстрация. PIN хранится в localStorage.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div id="flash"></div>
+        <form id="loginForm">
+          <div class="field">
+            <label for="pin">PIN</label>
+            <input id="pin" placeholder="1234" />
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Войти</button>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Разделы</h3>
+        <div class="list">
+          <a class="item" href="/admin/questions.html"><div class="item__title">Вопросы</div><div class="item__meta">статусы, публикация</div></a>
+          <a class="item" href="/admin/polls.html"><div class="item__title">Опросы</div><div class="item__meta">создание, дублирование</div></a>
+          <a class="item" href="/admin/donations.html"><div class="item__title">Сборы</div><div class="item__meta">цели, прогресс-бар, отчёты</div></a>
+          <a class="item" href="/admin/sermons.html"><div class="item__title">Проповеди</div><div class="item__meta">аудио/видео/ссылки</div></a>
+          <a class="item" href="/admin/schedule.html"><div class="item__title">Расписание</div><div class="item__meta">фото на месяц</div></a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load } from "/assets/js/storage.js";
+  import { qs, toast } from "/assets/js/ui.js";
+
+  const admin = load(KEYS.admin, { pin: "1234" });
+  const flash = qs("#flash");
+
+  qs("#loginForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const pin = qs("#pin").value.trim();
+    if(pin !== admin.pin){
+      toast(flash, "Неверный PIN.", "danger");
+      return;
+    }
+    sessionStorage.setItem("mp_admin_authed", "1");
+    location.href = "/admin/questions.html";
+  });
+</script>
+</body>
+</html>

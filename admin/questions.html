@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админ — вопросы</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/admin/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка</div><span class="brand__sub">Вопросы</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Вопросы</h1>
+        <p>Меняйте статус, публикуйте в архив, смотрите контакты только если разрешено.</p>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" aria-selected="true" data-filter="all">Все</button>
+        <button class="tab" aria-selected="false" data-filter="new">Новые</button>
+        <button class="tab" aria-selected="false" data-filter="selected">Отобраны</button>
+        <button class="tab" aria-selected="false" data-filter="done">Разобраны</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div id="root" class="list"></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section class="card card--subtle">
+      <h3>Публичный архив (страница)</h3>
+      <p class="muted">В этом прототипе архив можно показать здесь же, но в реальном сайте будет отдельная страница.</p>
+      <a class="btn" href="/admin/questions.html#published">Показать опубликованные</a>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load, save } from "/assets/js/storage.js";
+  import { setHTML, escapeHTML, fmtDate, qsa } from "/assets/js/ui.js";
+
+  if(sessionStorage.getItem("mp_admin_authed") !== "1"){
+    location.href = "/admin/index.html";
+  }
+
+  const root = document.getElementById("root");
+  const tabs = qsa(".tab");
+  let filter = "all";
+
+  function render(){
+    const questions = load(KEYS.questions, []);
+    const list = questions
+      .filter(q => filter === "all" ? true : q.status === filter)
+      .map(q=>{
+        const contact = q.canContact && q.contact ? `
+          <div class="notice notice--warn">
+            Контакт разрешён: <b>${escapeHTML(q.contact.phone || "")}</b>
+            ${q.contact.name ? `(${escapeHTML(q.contact.name)})` : ""}
+          </div>` : `<div class="notice">Контакт не разрешён.</div>`;
+
+        return `
+          <div class="item">
+            <div class="item__top">
+              <div>
+                <div class="item__title">${escapeHTML(q.title || "Без темы")}</div>
+                <div class="item__meta">${fmtDate(q.createdAt)} • ${escapeHTML(q.category)} • статус: <b>${escapeHTML(q.status)}</b> • опубликован: <b>${q.published ? "да" : "нет"}</b></div>
+              </div>
+              <span class="pill">${escapeHTML(q.category)}</span>
+            </div>
+
+            <div class="hr"></div>
+            <div class="small">${escapeHTML(q.text)}</div>
+
+            <div class="hr"></div>
+            ${contact}
+
+            <div class="item__actions">
+              <button class="btn" data-act="status" data-id="${q.id}" data-status="new">Новый</button>
+              <button class="btn" data-act="status" data-id="${q.id}" data-status="selected">Отобран</button>
+              <button class="btn" data-act="status" data-id="${q.id}" data-status="done">Разобран</button>
+              <button class="btn" data-act="status" data-id="${q.id}" data-status="rejected">Отклонён</button>
+              <button class="btn btn--primary" data-act="togglePub" data-id="${q.id}">${q.published ? "Скрыть" : "Опубликовать"}</button>
+              <button class="btn btn--danger" data-act="del" data-id="${q.id}">Удалить</button>
+            </div>
+          </div>
+        `;
+      });
+
+    setHTML(root, list.length ? list.join("") : `<div class="notice">Пока пусто.</div>`);
+  }
+
+  tabs.forEach(t=>{
+    t.addEventListener("click", ()=>{
+      tabs.forEach(x=>x.setAttribute("aria-selected","false"));
+      t.setAttribute("aria-selected","true");
+      filter = t.getAttribute("data-filter");
+      render();
+    });
+  });
+
+  root.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const act = btn.getAttribute("data-act");
+    const id = btn.getAttribute("data-id");
+
+    const questions = load(KEYS.questions, []);
+    const idx = questions.findIndex(q=>q.id === id);
+    if(idx < 0) return;
+
+    if(act === "status"){
+      questions[idx].status = btn.getAttribute("data-status");
+    }
+    if(act === "togglePub"){
+      questions[idx].published = !questions[idx].published;
+    }
+    if(act === "del"){
+      questions.splice(idx, 1);
+    }
+
+    save(KEYS.questions, questions);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

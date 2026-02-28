@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админ — проповеди</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/admin/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка</div><span class="brand__sub">Проповеди</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Материалы (аудио/видео)</h1>
+        <p>В прототипе вы указываете URL файлов. В реальном сайте это будет загрузка файлов на сервер.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div id="flash"></div>
+        <form id="form">
+          <div class="field">
+            <label for="title">Название</label>
+            <input id="title" />
+          </div>
+          <div class="field">
+            <label for="desc">Описание</label>
+            <textarea id="desc"></textarea>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="audio">Аудио URL (mp3)</label>
+              <input id="audio" placeholder="https://.../file.mp3" />
+            </div>
+            <div class="field">
+              <label for="video">Видео URL (mp4)</label>
+              <input id="video" placeholder="https://.../file.mp4" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="link">Ссылка на видео (YouTube/RuTube)</label>
+            <input id="link" placeholder="https://..." />
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Список</h3>
+        <div id="list" class="list"></div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load, save, uid, nowISO } from "/assets/js/storage.js";
+  import { setHTML, escapeHTML, toast, qs, fmtDate } from "/assets/js/ui.js";
+
+  if(sessionStorage.getItem("mp_admin_authed") !== "1"){
+    location.href = "/admin/index.html";
+  }
+
+  const flash = qs("#flash");
+  const list = qs("#list");
+
+  function render(){
+    const items = load(KEYS.sermons, []);
+    setHTML(list, items.length ? items.map(s=>`
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(s.title)}</div>
+            <div class="item__meta">${fmtDate(s.date)}</div>
+          </div>
+        </div>
+        <div class="item__actions">
+          <button class="btn btn--danger" data-del="${s.id}">Удалить</button>
+        </div>
+      </div>
+    `).join("") : `<div class="notice">Пока пусто.</div>`);
+  }
+
+  qs("#form").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const title = qs("#title").value.trim();
+    if(!title){
+      toast(flash, "Название обязательно.", "warn");
+      return;
+    }
+
+    const items = load(KEYS.sermons, []);
+    items.unshift({
+      id: uid("sermon"),
+      title,
+      description: qs("#desc").value.trim(),
+      audioUrl: qs("#audio").value.trim(),
+      videoUrl: qs("#video").value.trim(),
+      videoLink: qs("#link").value.trim(),
+      date: nowISO()
+    });
+    save(KEYS.sermons, items);
+
+    e.target.reset();
+    toast(flash, "Материал добавлен.", "ok");
+    render();
+  });
+
+  list.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-del]");
+    if(!btn) return;
+    const id = btn.getAttribute("data-del");
+    const items = load(KEYS.sermons, []);
+    const idx = items.findIndex(x=>x.id === id);
+    if(idx < 0) return;
+    items.splice(idx, 1);
+    save(KEYS.sermons, items);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

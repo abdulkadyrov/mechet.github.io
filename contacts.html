@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Контакты</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Мечеть</div><span class="brand__sub">Вопросы • Опросы • Садака</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/questions.html">Вопрос Имаму</a>
+        <a href="/polls.html">Опросы</a>
+        <a href="/donations.html">Садака</a>
+        <a href="/sermons.html">Проповеди</a>
+        <a href="/schedule.html">Расписание</a>
+        <a href="/contacts.html">Контакты</a>
+        <a href="/admin/index.html">Админ</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Контакты</h1>
+        <p>Здесь будут адрес, телефон, карта и график работы. В прототипе — заглушка.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3>Адрес</h3>
+        <p>Добавьте адрес мечети, ориентиры и т.п.</p>
+        <div class="hr"></div>
+        <div class="notice">В реальном сайте можно встроить карту (Яндекс/2ГИС/Google).</div>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Телефон</h3>
+        <p class="muted">+7 (___) ___-__-__</p>
+        <div class="hr"></div>
+        <h3>Объявления</h3>
+        <p class="muted">Можно добавить ссылки на соцсети/каналы.</p>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container"><div class="small">© Прототип</div></div>
+</footer>
+
+<script type="module">
+  import "./assets/js/app.js";
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админ — сборы</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/admin/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка</div><span class="brand__sub">Сборы и отчёты</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Кампании (сборы) + прогресс-бар</h1>
+        <p>Создавайте кампании, меняйте цель/собрано, публикуйте отчёты.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3>Новая кампания</h3>
+        <div id="flash"></div>
+        <form id="campForm">
+          <div class="field">
+            <label for="cTitle">Название</label>
+            <input id="cTitle" placeholder="Например: ремонт крыши" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="goal">Цель (₽)</label>
+              <input id="goal" type="number" min="0" step="1" placeholder="250000" />
+            </div>
+            <div class="field">
+              <label for="raised">Собрано (₽)</label>
+              <input id="raised" type="number" min="0" step="1" placeholder="0" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="details">Описание</label>
+            <textarea id="details" placeholder="Куда пойдут средства, что нужно сделать..."></textarea>
+          </div>
+          <label class="field">
+            <span class="small">Активная</span>
+            <input type="checkbox" id="active" checked />
+          </label>
+          <button class="btn btn--primary btn--block" type="submit">Создать</button>
+        </form>
+
+        <div class="hr"></div>
+
+        <h3>Новый отчёт</h3>
+        <form id="repForm">
+          <div class="field">
+            <label for="repTitle">Заголовок</label>
+            <input id="repTitle" placeholder="Например: закупили материалы" />
+          </div>
+          <div class="field">
+            <label for="repCamp">Кампания (опционально)</label>
+            <select id="repCamp"></select>
+          </div>
+          <div class="field">
+            <label for="repText">Текст</label>
+            <textarea id="repText"></textarea>
+          </div>
+          <div class="field">
+            <label for="repImgs">Фото (URL, каждый с новой строки)</label>
+            <textarea id="repImgs" placeholder="https://.../1.jpg&#10;https://.../2.jpg"></textarea>
+            <div class="help">В прототипе фото — по URL. В реальном сайте это будет загрузка файлов.</div>
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Опубликовать отчёт</button>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Кампании</h3>
+        <div id="camps" class="list"></div>
+        <div class="hr"></div>
+        <h3>Отчёты</h3>
+        <div id="reports" class="list"></div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load, save, uid, nowISO } from "/assets/js/storage.js";
+  import { setHTML, escapeHTML, toast, qs, fmtDate } from "/assets/js/ui.js";
+
+  if(sessionStorage.getItem("mp_admin_authed") !== "1"){
+    location.href = "/admin/index.html";
+  }
+
+  const flash = qs("#flash");
+  const repCamp = qs("#repCamp");
+  const campsRoot = qs("#camps");
+  const repsRoot = qs("#reports");
+
+  function render(){
+    const camps = load(KEYS.campaigns, []);
+    const reps = load(KEYS.reports, []);
+
+    setHTML(repCamp, `<option value="">— без привязки —</option>` + camps.map(c=>`<option value="${c.id}">${escapeHTML(c.title)}</option>`).join(""));
+
+    setHTML(campsRoot, camps.length ? camps.map(c=>{
+      const pct = c.goal ? Math.min(100, Math.round((c.raised/c.goal)*100)) : 0;
+      return `
+        <div class="item">
+          <div class="item__top">
+            <div>
+              <div class="item__title">${escapeHTML(c.title)}</div>
+              <div class="item__meta">${c.raised.toLocaleString("ru-RU")}₽ / ${c.goal.toLocaleString("ru-RU")}₽ • ${pct}% • активна: <b>${c.active ? "да" : "нет"}</b></div>
+            </div>
+          </div>
+          <div class="item__actions">
+            <button class="btn" data-act="toggle" data-id="${c.id}">${c.active ? "Деактивировать" : "Активировать"}</button>
+            <button class="btn btn--danger" data-act="del" data-id="${c.id}">Удалить</button>
+          </div>
+        </div>
+      `;
+    }).join("") : `<div class="notice">Пока нет кампаний.</div>`);
+
+    setHTML(repsRoot, reps.length ? reps.map(r=>`
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(r.title)}</div>
+            <div class="item__meta">${fmtDate(r.createdAt)}${r.campaignTitle ? " • " + escapeHTML(r.campaignTitle) : ""}</div>
+          </div>
+        </div>
+        <div class="item__actions">
+          <button class="btn btn--danger" data-act="delRep" data-id="${r.id}">Удалить</button>
+        </div>
+      </div>
+    `).join("") : `<div class="notice">Отчётов пока нет.</div>`);
+  }
+
+  qs("#campForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const title = qs("#cTitle").value.trim();
+    const goal = Number(qs("#goal").value || 0);
+    const raised = Number(qs("#raised").value || 0);
+    const details = qs("#details").value.trim();
+    const active = qs("#active").checked;
+
+    if(!title || !goal){
+      toast(flash, "Укажите название и цель (₽).", "warn");
+      return;
+    }
+
+    const camps = load(KEYS.campaigns, []);
+    camps.unshift({ id: uid("camp"), title, goal, raised, details, active, createdAt: nowISO() });
+    save(KEYS.campaigns, camps);
+
+    e.target.reset();
+    qs("#active").checked = true;
+    toast(flash, "Кампания создана.", "ok");
+    render();
+  });
+
+  qs("#repForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const title = qs("#repTitle").value.trim();
+    const campId = repCamp.value || "";
+    const text = qs("#repText").value.trim();
+    const imgs = qs("#repImgs").value.trim().split("\n").map(s=>s.trim()).filter(Boolean);
+
+    if(!title){
+      toast(flash, "Укажите заголовок отчёта.", "warn");
+      return;
+    }
+
+    const camps = load(KEYS.campaigns, []);
+    const camp = camps.find(c=>c.id === campId);
+
+    const reps = load(KEYS.reports, []);
+    reps.unshift({
+      id: uid("rep"),
+      title,
+      text,
+      images: imgs,
+      createdAt: nowISO(),
+      campaignId: campId || null,
+      campaignTitle: camp ? camp.title : ""
+    });
+    save(KEYS.reports, reps);
+
+    e.target.reset();
+    toast(flash, "Отчёт опубликован.", "ok");
+    render();
+  });
+
+  campsRoot.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const act = btn.getAttribute("data-act");
+    const id = btn.getAttribute("data-id");
+
+    const camps = load(KEYS.campaigns, []);
+    const idx = camps.findIndex(c=>c.id === id);
+    if(idx < 0) return;
+
+    if(act === "toggle") camps[idx].active = !camps[idx].active;
+    if(act === "del") camps.splice(idx, 1);
+
+    save(KEYS.campaigns, camps);
+    render();
+  });
+
+  repsRoot.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-act='delRep']");
+    if(!btn) return;
+    const id = btn.getAttribute("data-id");
+    const reps = load(KEYS.reports, []);
+    const idx = reps.findIndex(r=>r.id === id);
+    if(idx < 0) return;
+    reps.splice(idx, 1);
+    save(KEYS.reports, reps);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

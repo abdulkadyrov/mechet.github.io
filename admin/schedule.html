@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админ — расписание</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/admin/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка</div><span class="brand__sub">Расписание</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Расписание (фото на месяц)</h1>
+        <p>В прототипе задаём URL картинки. В реальном сайте — загрузка изображения.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div id="flash"></div>
+        <form id="form">
+          <div class="field">
+            <label for="month">Подпись (месяц)</label>
+            <input id="month" placeholder="Февраль 2026" />
+          </div>
+          <div class="field">
+            <label for="img">Фото URL</label>
+            <input id="img" placeholder="https://.../schedule.jpg" />
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Сохранить</button>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Предпросмотр</h3>
+        <div id="preview"></div>
+        <div class="hr"></div>
+        <a class="btn btn--block" href="/schedule.html">Открыть на сайте</a>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load, save } from "/assets/js/storage.js";
+  import { setHTML, escapeHTML, toast, qs } from "/assets/js/ui.js";
+
+  if(sessionStorage.getItem("mp_admin_authed") !== "1"){
+    location.href = "/admin/index.html";
+  }
+
+  const flash = qs("#flash");
+  const preview = qs("#preview");
+  const current = load(KEYS.schedule, { monthLabel:"", imageUrl:"" });
+
+  qs("#month").value = current.monthLabel || "";
+  qs("#img").value = current.imageUrl || "";
+
+  function renderPreview(){
+    const month = qs("#month").value.trim();
+    const img = qs("#img").value.trim();
+    setHTML(preview, `
+      <div class="item">
+        <div class="item__title">${escapeHTML(month || "Без подписи")}</div>
+        <div class="hr"></div>
+        ${img ? `<img src="${escapeHTML(img)}" alt="preview" style="border-radius:14px;border:1px solid var(--border)">` : `<div class="notice">Нет изображения.</div>`}
+      </div>
+    `);
+  }
+
+  qs("#form").addEventListener("input", renderPreview);
+  qs("#form").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const monthLabel = qs("#month").value.trim();
+    const imageUrl = qs("#img").value.trim();
+    save(KEYS.schedule, { monthLabel, imageUrl });
+    toast(flash, "Сохранено.", "ok");
+    renderPreview();
+  });
+
+  renderPreview();
+</script>
+</body>
+</html>

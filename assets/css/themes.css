@@ -1,0 +1,13 @@
+.hero{
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 6px);
+  background:
+    linear-gradient(135deg, rgba(39,196,168,.22), rgba(124,92,255,.12)),
+    radial-gradient(700px 300px at 30% 30%, rgba(39,196,168,.20), transparent 65%),
+    rgba(255,255,255,.04);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.hero h1{margin:0 0 8px; font-size: 1.6rem;}
+.hero p{margin:0; color: var(--muted); max-width: 70ch; line-height: 1.5;}
+.hero__cta{display:flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;}

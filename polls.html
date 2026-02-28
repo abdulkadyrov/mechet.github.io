@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Опросы</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Мечеть</div><span class="brand__sub">Вопросы • Опросы • Садака</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/questions.html">Вопрос Имаму</a>
+        <a href="/polls.html">Опросы</a>
+        <a href="/donations.html">Садака</a>
+        <a href="/sermons.html">Проповеди</a>
+        <a href="/schedule.html">Расписание</a>
+        <a href="/contacts.html">Контакты</a>
+        <a href="/admin/index.html">Админ</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Опрос тем проповеди</h1>
+        <p>Выберите одну тему. Результаты видны сразу. Прототип: один голос на браузер.</p>
+      </div>
+      <a class="badge" href="/admin/polls.html">Управление опросами →</a>
+    </div>
+
+    <section class="card">
+      <div id="pollsRoot"></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section class="card card--subtle">
+      <h3>История опросов</h3>
+      <div id="pollHistory" class="list"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container"><div class="small">© Прототип</div></div>
+</footer>
+
+<script type="module">
+  import "./assets/js/app.js";
+  import "./assets/js/mock-api/seed.js";
+  import { KEYS, load, save } from "./assets/js/storage.js";
+  import { setHTML, escapeHTML } from "./assets/js/ui.js";
+
+  const root = document.getElementById("pollsRoot");
+  const history = document.getElementById("pollHistory");
+
+  const polls = load(KEYS.polls, []);
+  const votes = load(KEYS.votes, {});
+
+  const active = polls.find(p => p.status === "active");
+
+  function countsFor(poll){
+    const counts = {};
+    for(const opt of poll.options) counts[opt.id] = 0;
+    const voted = votes[poll.id];
+    // votes structure: { [pollId]: optionId } in this prototype
+    // This means only 1 vote stored per poll per browser.
+    // We'll treat it as total=0/1 for demo.
+    if(voted && counts[voted] !== undefined) counts[voted] += 1;
+    const total = Object.values(counts).reduce((a,b)=>a+b,0);
+    return { counts, total, voted };
+  }
+
+  if(!active){
+    setHTML(root, `<div class="notice">Сейчас нет активного опроса.</div>`);
+  }else{
+    const { counts, total, voted } = countsFor(active);
+    setHTML(root, `
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(active.title)}</div>
+            <div class="item__meta">Статус: активен • один вариант</div>
+          </div>
+          <span class="pill">${total} голос(ов)</span>
+        </div>
+        <div class="hr"></div>
+        <div class="list">
+          ${active.options.map(opt=>{
+            const c = counts[opt.id] || 0;
+            const pct = total ? Math.round((c/total)*100) : 0;
+            const disabled = voted ? "disabled" : "";
+            const mine = voted === opt.id ? " (ваш выбор)" : "";
+            return `
+              <div class="item">
+                <div class="item__top">
+                  <div style="flex:1">
+                    <div class="item__title">${escapeHTML(opt.text)}<span class="small">${mine}</span></div>
+                    <div class="progress"><div class="progress__bar" style="width:${pct}%"></div></div>
+                    <div class="item__meta">${c} • ${pct}%</div>
+                  </div>
+                  <button class="btn btn--primary" data-vote="${opt.id}" ${disabled}>Голосовать</button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `);
+
+    root.addEventListener("click", (e)=>{
+      const btn = e.target.closest("[data-vote]");
+      if(!btn) return;
+      if(votes[active.id]) return;
+      votes[active.id] = btn.getAttribute("data-vote");
+      save(KEYS.votes, votes);
+      location.reload();
+    });
+  }
+
+  const closed = polls.filter(p => p.status !== "active");
+  if(!closed.length){
+    setHTML(history, `<div class="notice">История пока пустая.</div>`);
+  }else{
+    setHTML(history, closed.map(p=>`
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(p.title)}</div>
+            <div class="item__meta">Статус: ${escapeHTML(p.status)}</div>
+          </div>
+        </div>
+      </div>
+    `).join(""));
+  }
+</script>
+</body>
+</html>

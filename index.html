@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Мечеть — сайт общины</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="nav">
+        <a class="brand" href="/index.html">
+          <div class="brand__logo" aria-hidden="true"></div>
+          <div>
+            <div class="brand__name">Мечеть</div>
+            <span class="brand__sub">Вопросы • Опросы • Садака</span>
+          </div>
+        </a>
+
+        <nav class="nav__links" aria-label="Навигация">
+          <a href="/questions.html">Вопрос Имаму</a>
+          <a href="/polls.html">Опросы</a>
+          <a href="/donations.html">Садака</a>
+          <a href="/sermons.html">Проповеди</a>
+          <a href="/schedule.html">Расписание</a>
+          <a href="/contacts.html">Контакты</a>
+          <a href="/admin/index.html">Админ</a>
+        </nav>
+
+        <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <section class="hero">
+        <h1>Сайт общины</h1>
+        <p>
+          Здесь можно анонимно оставить вопрос для Имама (с возможностью указать номер для связи),
+          проголосовать за тему пятничной проповеди, посмотреть отчёты по сбору садака и расписание намаза.
+        </p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="/questions.html">Задать вопрос</a>
+          <a class="btn" href="/polls.html">Голосовать за тему</a>
+          <a class="btn" href="/donations.html">Сборы и отчёты</a>
+        </div>
+      </section>
+
+      <div class="hr"></div>
+
+      <div class="grid">
+        <section class="card">
+          <div class="section-title">
+            <h2>Актуальный опрос</h2>
+            <a class="badge" href="/polls.html">Все опросы →</a>
+          </div>
+          <div id="homePoll"></div>
+        </section>
+
+        <aside class="card card--subtle">
+          <h3>Быстрые действия</h3>
+          <div class="list">
+            <a class="item" href="/schedule.html">
+              <div class="item__top">
+                <div class="item__title">Расписание намаза</div>
+                <div class="item__meta">Фото на месяц</div>
+              </div>
+            </a>
+            <a class="item" href="/sermons.html">
+              <div class="item__top">
+                <div class="item__title">Проповеди</div>
+                <div class="item__meta">Аудио/видео</div>
+              </div>
+            </a>
+            <a class="item" href="/admin/index.html">
+              <div class="item__top">
+                <div class="item__title">Админка (прототип)</div>
+                <div class="item__meta">PIN: <kbd>1234</kbd></div>
+              </div>
+            </a>
+          </div>
+
+          <div class="hr"></div>
+          <div class="notice notice--warn">
+            Это прототип на <b>localStorage</b>: данные сохраняются только в вашем браузере.
+            Для настоящего сайта понадобится сервер/CMS (например WordPress).
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="small">© Прототип. Раздел “Админ” — демонстрация интерфейса.</div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import "./assets/js/app.js";
+    import "./assets/js/mock-api/seed.js";
+    import { KEYS, load, save } from "./assets/js/storage.js";
+    import { setHTML, escapeHTML } from "./assets/js/ui.js";
+
+    const root = document.getElementById("homePoll");
+    const polls = load(KEYS.polls, []);
+    const votes = load(KEYS.votes, {});
+    const active = polls.find(p => p.status === "active");
+
+    if(!active){
+      setHTML(root, `<div class="notice">Нет активного опроса.</div>`);
+    }else{
+      const pollId = active.id;
+      const votedOpt = votes[pollId];
+
+      const counts = {};
+      for(const opt of active.options) counts[opt.id] = 0;
+      for(const [k,v] of Object.entries(votes)){
+        if(k === pollId && v && counts[v] !== undefined) counts[v] += 1;
+      }
+      const total = Object.values(counts).reduce((a,b)=>a+b,0);
+
+      setHTML(root, `
+        <div class="item">
+          <div class="item__top">
+            <div>
+              <div class="item__title">${escapeHTML(active.title)}</div>
+              <div class="item__meta">Голосование: 1 вариант • результаты сразу</div>
+            </div>
+            <span class="pill">${total} голос(ов)</span>
+          </div>
+          <div class="hr"></div>
+          <div class="list">
+            ${active.options.map(opt=>{
+              const c = counts[opt.id] || 0;
+              const pct = total ? Math.round((c/total)*100) : 0;
+              const disabled = votedOpt ? "disabled" : "";
+              const mine = votedOpt === opt.id ? " (ваш выбор)" : "";
+              return `
+                <div class="item">
+                  <div class="item__top">
+                    <div>
+                      <div class="item__title">${escapeHTML(opt.text)}<span class="small">${mine}</span></div>
+                      <div class="progress" aria-label="прогресс"><div class="progress__bar" style="width:${pct}%"></div></div>
+                      <div class="item__meta">${c} • ${pct}%</div>
+                    </div>
+                    <button class="btn btn--primary" data-vote="${opt.id}" ${disabled}>Голосовать</button>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `);
+
+      root.addEventListener("click", (e)=>{
+        const btn = e.target.closest("[data-vote]");
+        if(!btn) return;
+        if(votes[pollId]) return;
+
+        const optId = btn.getAttribute("data-vote");
+        votes[pollId] = optId;
+        save(KEYS.votes, votes);
+        location.reload();
+      });
+    }
+  </script>
+</body>
+</html>

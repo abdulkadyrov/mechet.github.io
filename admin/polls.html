@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Админ — опросы</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/admin/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Админка</div><span class="brand__sub">Опросы</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/admin/questions.html">Вопросы</a>
+        <a href="/admin/polls.html">Опросы</a>
+        <a href="/admin/donations.html">Сборы</a>
+        <a href="/admin/sermons.html">Проповеди</a>
+        <a href="/admin/schedule.html">Расписание</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Опросы</h1>
+        <p>Создание, закрытие, дублирование. (Прототип: 1 голос на браузер.)</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3>Создать опрос</h3>
+        <div id="flash"></div>
+        <form id="pollForm">
+          <div class="field">
+            <label for="title">Название</label>
+            <input id="title" placeholder="Темы проповеди на ..." />
+          </div>
+          <div class="field">
+            <label for="options">Варианты (каждый с новой строки)</label>
+            <textarea id="options" placeholder="Тема 1&#10;Тема 2&#10;Тема 3"></textarea>
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Создать и сделать активным</button>
+          <div class="help">Если уже есть активный опрос — он будет закрыт.</div>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Существующие</h3>
+        <div id="list" class="list"></div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import "/assets/js/app.js";
+  import "/assets/js/mock-api/seed.js";
+  import { KEYS, load, save, uid, nowISO } from "/assets/js/storage.js";
+  import { setHTML, escapeHTML, toast, qs } from "/assets/js/ui.js";
+
+  if(sessionStorage.getItem("mp_admin_authed") !== "1"){
+    location.href = "/admin/index.html";
+  }
+
+  const flash = qs("#flash");
+  const list = qs("#list");
+
+  function renderList(){
+    const polls = load(KEYS.polls, []);
+    setHTML(list, polls.length ? polls.map(p=>`
+      <div class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(p.title)}</div>
+            <div class="item__meta">Статус: <b>${escapeHTML(p.status)}</b> • Вариантов: ${p.options.length}</div>
+          </div>
+          <span class="pill">${escapeHTML(p.status)}</span>
+        </div>
+        <div class="item__actions">
+          <button class="btn" data-act="activate" data-id="${p.id}">Сделать активным</button>
+          <button class="btn" data-act="close" data-id="${p.id}">Закрыть</button>
+          <button class="btn btn--primary" data-act="duplicate" data-id="${p.id}">Дублировать</button>
+          <button class="btn btn--danger" data-act="del" data-id="${p.id}">Удалить</button>
+        </div>
+      </div>
+    `).join("") : `<div class="notice">Опросов пока нет.</div>`);
+  }
+
+  qs("#pollForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const title = qs("#title").value.trim();
+    const optionsText = qs("#options").value.trim();
+    const lines = optionsText.split("\n").map(s=>s.trim()).filter(Boolean);
+
+    if(!title || lines.length < 2){
+      toast(flash, "Укажите название и минимум 2 варианта.", "warn");
+      return;
+    }
+
+    const polls = load(KEYS.polls, []);
+    // close all actives
+    for(const p of polls){
+      if(p.status === "active") p.status = "closed";
+    }
+
+    polls.unshift({
+      id: uid("poll"),
+      title,
+      createdAt: nowISO(),
+      status: "active",
+      options: lines.map(text => ({ id: uid("opt"), text }))
+    });
+
+    save(KEYS.polls, polls);
+    // reset votes for this browser (optional)
+    const votes = load(KEYS.votes, {});
+    save(KEYS.votes, votes);
+
+    toast(flash, "Опрос создан и активирован.", "ok");
+    e.target.reset();
+    renderList();
+  });
+
+  list.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-act]");
+    if(!btn) return;
+    const act = btn.getAttribute("data-act");
+    const id = btn.getAttribute("data-id");
+
+    const polls = load(KEYS.polls, []);
+    const idx = polls.findIndex(p=>p.id === id);
+    if(idx < 0) return;
+
+    if(act === "activate"){
+      for(const p of polls){
+        if(p.status === "active") p.status = "closed";
+      }
+      polls[idx].status = "active";
+    }
+    if(act === "close"){
+      polls[idx].status = "closed";
+    }
+    if(act === "duplicate"){
+      const src = polls[idx];
+      polls.unshift({
+        id: uid("poll"),
+        title: src.title + " (копия)",
+        createdAt: nowISO(),
+        status: "draft",
+        options: src.options.map(o => ({ id: uid("opt"), text: o.text }))
+      });
+    }
+    if(act === "del"){
+      polls.splice(idx, 1);
+    }
+
+    save(KEYS.polls, polls);
+    renderList();
+  });
+
+  renderList();
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Проповеди</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Мечеть</div><span class="brand__sub">Вопросы • Опросы • Садака</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/questions.html">Вопрос Имаму</a>
+        <a href="/polls.html">Опросы</a>
+        <a href="/donations.html">Садака</a>
+        <a href="/sermons.html">Проповеди</a>
+        <a href="/schedule.html">Расписание</a>
+        <a href="/contacts.html">Контакты</a>
+        <a href="/admin/index.html">Админ</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Проповеди и уроки</h1>
+        <p>Можно прикрепить аудио/видео файлы или ссылку. В прототипе файлы — это URL (например, на CDN/хостинг).</p>
+      </div>
+      <a class="badge" href="/admin/sermons.html">Управление →</a>
+    </div>
+
+    <section class="card">
+      <div id="sermons" class="list"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container"><div class="small">© Прототип</div></div>
+</footer>
+
+<script type="module">
+  import "./assets/js/app.js";
+  import "./assets/js/mock-api/seed.js";
+  import { KEYS, load } from "./assets/js/storage.js";
+  import { setHTML, escapeHTML, fmtDate } from "./assets/js/ui.js";
+
+  const items = load(KEYS.sermons, []);
+  const root = document.getElementById("sermons");
+
+  if(!items.length){
+    setHTML(root, `<div class="notice">Пока нет материалов.</div>`);
+  }else{
+    setHTML(root, items.map(s=>`
+      <article class="item">
+        <div class="item__top">
+          <div>
+            <div class="item__title">${escapeHTML(s.title)}</div>
+            <div class="item__meta">${fmtDate(s.date)}</div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="small">${escapeHTML(s.description || "")}</div>
+
+        ${s.audioUrl ? `
+          <div class="hr"></div>
+          <audio controls style="width:100%">
+            <source src="${escapeHTML(s.audioUrl)}" />
+          </audio>` : ""}
+
+        ${s.videoUrl ? `
+          <div class="hr"></div>
+          <video controls style="width:100%; border-radius:14px; border:1px solid var(--border)">
+            <source src="${escapeHTML(s.videoUrl)}" />
+          </video>` : ""}
+
+        ${s.videoLink ? `
+          <div class="hr"></div>
+          <a class="btn" href="${escapeHTML(s.videoLink)}" target="_blank" rel="noopener">Открыть видео по ссылке</a>` : ""}
+      </article>
+    `).join(""));
+  }
+</script>
+</body>
+</html>

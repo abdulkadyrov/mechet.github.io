@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вопрос Имаму</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/themes.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="/index.html">
+        <div class="brand__logo" aria-hidden="true"></div>
+        <div><div class="brand__name">Мечеть</div><span class="brand__sub">Вопросы • Опросы • Садака</span></div>
+      </a>
+      <nav class="nav__links">
+        <a href="/questions.html">Вопрос Имаму</a>
+        <a href="/polls.html">Опросы</a>
+        <a href="/donations.html">Садака</a>
+        <a href="/sermons.html">Проповеди</a>
+        <a href="/schedule.html">Расписание</a>
+        <a href="/contacts.html">Контакты</a>
+        <a href="/admin/index.html">Админ</a>
+      </nav>
+      <button class="btn btn--ghost" data-nav-toggle>Меню</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="section-title">
+      <div>
+        <h1>Задать вопрос Имаму</h1>
+        <p>Вопрос анонимный. Если хотите, можно оставить номер телефона для уточнения (без подтверждения на старте).</p>
+      </div>
+      <span class="badge">Лимит: 1 вопрос в день</span>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div id="flash"></div>
+
+        <form id="qForm">
+          <div class="row">
+            <div class="field">
+              <label for="category">Категория</label>
+              <select id="category">
+                <option value="Общее">Общее</option>
+                <option value="Намаз">Намаз</option>
+                <option value="Пост">Пост</option>
+                <option value="Семья">Семья</option>
+                <option value="Финансы">Финансы</option>
+                <option value="Акыда">Акыда</option>
+                <option value="Нравственность">Нравственность</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="title">Тема (необязательно)</label>
+              <input id="title" placeholder="Например: о джума-намазе" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="text">Вопрос</label>
+            <textarea id="text" placeholder="Напишите вопрос максимально ясно…"></textarea>
+            <div class="help">Не указывайте личные данные в тексте вопроса.</div>
+          </div>
+
+          <div class="field">
+            <label>
+              <input type="checkbox" id="canContact" />
+              Можно связаться со мной для уточнения
+            </label>
+            <div class="help">Если включить, нужно указать телефон.</div>
+          </div>
+
+          <div class="row" id="contactRow" style="display:none;">
+            <div class="field">
+              <label for="phone">Телефон</label>
+              <input id="phone" placeholder="+7 ..." />
+            </div>
+            <div class="field">
+              <label for="name">Имя (необязательно)</label>
+              <input id="name" placeholder="Имя" />
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--block" type="submit">Отправить вопрос</button>
+          <div class="help">Прототип: капча не подключена, но лимит 1/день работает локально.</div>
+        </form>
+      </section>
+
+      <aside class="card card--subtle">
+        <h3>Как это будет использоваться</h3>
+        <p>В админке Имам видит список вопросов и отмечает те, что разберёт в пятничной проповеди.</p>
+        <div class="hr"></div>
+        <a class="btn btn--block" href="/admin/questions.html">Открыть админку вопросов</a>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container"><div class="small">© Прототип</div></div>
+</footer>
+
+<script type="module">
+  import "./assets/js/app.js";
+  import "./assets/js/mock-api/seed.js";
+  import { KEYS, load, save, uid, nowISO } from "./assets/js/storage.js";
+  import { qs, toast } from "./assets/js/ui.js";
+  import { isPhoneLike } from "./assets/js/validate.js";
+
+  const form = qs("#qForm");
+  const canContact = qs("#canContact");
+  const contactRow = qs("#contactRow");
+  const flash = qs("#flash");
+
+  const limitKey = "mp_questions_daily_limit_v1";
+
+  function canSubmitToday(){
+    const last = localStorage.getItem(limitKey);
+    const today = new Date().toISOString().slice(0,10);
+    return last !== today;
+  }
+  function markSubmitted(){
+    const today = new Date().toISOString().slice(0,10);
+    localStorage.setItem(limitKey, today);
+  }
+
+  canContact.addEventListener("change", ()=>{
+    contactRow.style.display = canContact.checked ? "grid" : "none";
+  });
+
+  form.addEventListener("submit", (e)=>{
+    e.preventDefault();
+
+    if(!canSubmitToday()){
+      toast(flash, "Лимит: 1 вопрос в день. Попробуйте завтра.", "warn");
+      return;
+    }
+
+    const category = qs("#category").value.trim();
+    const title = qs("#title").value.trim();
+    const text = qs("#text").value.trim();
+    const phone = qs("#phone").value.trim();
+    const name = qs("#name").value.trim();
+
+    if(text.length < 10){
+      toast(flash, "Вопрос слишком короткий. Напишите подробнее.", "warn");
+      return;
+    }
+
+    if(canContact.checked){
+      if(!isPhoneLike(phone)){
+        toast(flash, "Укажите корректный телефон (пример: +7 999 123-45-67).", "warn");
+        return;
+      }
+    }
+
+    const questions = load(KEYS.questions, []);
+    questions.unshift({
+      id: uid("q"),
+      createdAt: nowISO(),
+      category,
+      title,
+      text,
+      canContact: !!canContact.checked,
+      contact: canContact.checked ? { phone, name } : null,
+      status: "new",
+      published: false,
+      imamNote: "",
+      imamAnswer: ""
+    });
+    save(KEYS.questions, questions);
+    markSubmitted();
+
+    form.reset();
+    contactRow.style.display = "none";
+    toast(flash, "Вопрос отправлен. Пусть Аллах воздаст вам благом.", "ok");
+  });
+</script>
+</body>
+</html>
