@@ -25,9 +25,10 @@
         radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.12), transparent 60%),
         var(--bg);
       color:var(--text);
-      overflow:hidden;
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
+      /* ВАЖНО: не блокируем скролл на body */
+      overflow:auto;
     }
 
     .screen{
@@ -219,7 +220,7 @@
       white-space:nowrap;
     }
 
-    /* Settings drawer */
+    /* Settings drawer: делаем скролл ВНУТРИ */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -237,10 +238,10 @@
       transform: translateY(105%);
       transition: transform .22s ease;
       padding:
-        12px
-        max(12px, env(safe-area-inset-right))
-        max(12px, env(safe-area-inset-bottom))
-        max(12px, env(safe-area-inset-left));
+        10px
+        max(10px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
     }
     .sheet.open{ transform: translateY(0); }
 
@@ -249,25 +250,41 @@
       border:1px solid var(--border);
       background: rgba(10,14,28,.92);
       box-shadow: var(--shadow);
-      padding: 12px;
       backdrop-filter: blur(10px);
-      max-height: min(72vh, 560px);
-      overflow:auto;
+
+      /* ВАЖНО: фиксируем высоту и включаем прокрутку */
+      max-height: 78vh;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
     }
+
+    .sheetHandle{
+      width:44px;
+      height:5px;
+      border-radius:999px;
+      background: rgba(255,255,255,.25);
+      margin: 10px auto 6px;
+      flex:0 0 auto;
+    }
+
     .sheetHead{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
-      margin-bottom:10px;
-      position: sticky;
-      top: 0;
-      background: rgba(10,14,28,.92);
-      padding-bottom: 10px;
-      z-index: 2;
+      padding: 8px 12px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      flex:0 0 auto;
     }
     .sheetTitle{ font-size:14px; font-weight: 950; letter-spacing:.2px; }
     .sheetClose{ min-width: 96px; }
+
+    .sheetBody{
+      padding: 12px;
+      overflow:auto;               /* <-- вот тут скролл */
+      -webkit-overflow-scrolling: touch;
+    }
 
     .sheetGrid{ display:grid; gap:12px; }
     .row{
@@ -291,10 +308,7 @@
     .counter{display:flex; gap:8px; align-items:center}
     .miniBtn{ min-width: 44px; padding: 10px 0; }
 
-    .names{
-      display:grid;
-      gap:10px;
-    }
+    .names{ display:grid; gap:10px; }
     .nameRow{
       display:grid;
       grid-template-columns: 1fr;
@@ -304,7 +318,6 @@
       border-radius: 16px;
       background: rgba(255,255,255,.04);
     }
-
     .note{
       color: var(--muted);
       font-size:12px;
@@ -347,40 +360,43 @@
   <!-- Settings sheet -->
   <div class="sheetOverlay" id="overlay"></div>
   <div class="sheet" id="sheet" aria-hidden="true">
-    <div class="sheetCard">
+    <div class="sheetCard" role="dialog" aria-modal="true">
+      <div class="sheetHandle"></div>
       <div class="sheetHead">
         <div class="sheetTitle">Настройки</div>
         <button class="btn sheetClose" id="closeSettingsBtn">Закрыть</button>
       </div>
 
-      <div class="sheetGrid">
-        <div class="row">
-          <div class="label">Время на игрока</div>
-          <div class="timePick">
-            <select id="mm"></select>
-            <div class="label">:</div>
-            <select id="ss"></select>
+      <div class="sheetBody">
+        <div class="sheetGrid">
+          <div class="row">
+            <div class="label">Время на игрока</div>
+            <div class="timePick">
+              <select id="mm"></select>
+              <div class="label">:</div>
+              <select id="ss"></select>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          <div class="label">Игроков</div>
-          <div class="counter">
-            <button class="btn miniBtn" id="minusBtn">−</button>
-            <div class="pill"><b id="playersCount">2</b></div>
-            <button class="btn miniBtn" id="plusBtn">+</button>
+          <div class="row">
+            <div class="label">Игроков</div>
+            <div class="counter">
+              <button class="btn miniBtn" id="minusBtn">−</button>
+              <div class="pill"><b id="playersCount">2</b></div>
+              <button class="btn miniBtn" id="plusBtn">+</button>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
-        </div>
+          <div class="row">
+            <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
+          </div>
 
-        <div class="label">Имена игроков</div>
-        <div class="names" id="namesBox"></div>
+          <div class="label">Имена игроков</div>
+          <div class="names" id="namesBox"></div>
 
-        <div class="note" id="settingsNote">
-          Пока раунд не начат, можно менять время, игроков и имена. Во время раунда настройки заблокированы — нажми «Сброс».
+          <div class="note" id="settingsNote">
+            Пока раунд не начат, можно менять время/игроков/имена. Во время раунда настройки заблокированы — нажми «Сброс».
+          </div>
         </div>
       </div>
     </div>
@@ -450,10 +466,9 @@
       baseMs: 30_000,
       times: [],
       names: ["Игрок 1", "Игрок 2"],
-
-      active: -1,        // кто сейчас тратит время (-1 = никто)
-      started: false,    // нажали Старт (раунд подготовлен)
-      running: false,    // реально тикает после первого клика по игроку
+      active: -1,
+      started: false,
+      running: false,
       paused: true,
       lastTs: 0,
       finished: new Set(),
@@ -521,7 +536,7 @@
 
       settingsNote.textContent = locked
         ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
-        : "Можно менять время, игроков и имена. Нажми «Старт», затем нажми любого игрока.";
+        : "Можно менять время/игроков/имена. Нажми «Старт», затем нажми любого игрока.";
     }
 
     function buildNamesEditor(){
@@ -540,7 +555,6 @@
         inp.value = state.names[i] ?? `Игрок ${i+1}`;
         inp.addEventListener("input", () => {
           state.names[i] = inp.value.trim() || `Игрок ${i+1}`;
-          // обновим подписи на карточках и "Ход:"
           const nameEl = document.getElementById(`n-${i}`);
           if (nameEl) nameEl.textContent = state.names[i];
           setStatusText();
@@ -610,7 +624,6 @@
 
         const sEl = document.getElementById(`s-${i}`);
         if (!sEl) continue;
-
         if (state.finished.has(i)) sEl.textContent = "Вышло";
         else if (!state.started) sEl.textContent = "После Старт";
         else if (!state.running) sEl.textContent = "Нажми → ход следующему";
@@ -635,7 +648,6 @@
       return from;
     }
 
-    // правило: нажал игрок i -> активен i+1 и начинает тратить время
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
@@ -662,7 +674,7 @@
       state.active = -1;
 
       state.started = true;
-      state.running = false; // не тикает до клика игрока
+      state.running = false;
       state.paused = true;
       state.lastTs = 0;
 
@@ -704,7 +716,6 @@
       state.baseMs = getPickedMs();
       state.times = Array.from({length: state.n}, () => state.baseMs);
 
-      // поддерживаем массив имён по длине
       const newNames = [];
       for (let i=0;i<state.n;i++){
         newNames[i] = state.names[i] ?? `Игрок ${i+1}`;
@@ -722,8 +733,8 @@
       if (state.started) return;
       state.baseMs = getPickedMs();
       state.times = Array.from({length: state.n}, () => state.baseMs);
-      renderAll();
       buildPlayers();
+      renderAll();
     }
 
     function tick(ts){
@@ -770,12 +781,6 @@
       sheet.setAttribute("aria-hidden", "true");
     }
 
-    // events
-    startBtn.addEventListener("click", start);
-    pauseBtn.addEventListener("click", pause);
-    resumeBtn.addEventListener("click", resume);
-    resetBtn.addEventListener("click", resetAll);
-
     settingsBtn.addEventListener("click", openSettings);
     closeSettingsBtn.addEventListener("click", closeSettings);
     overlay.addEventListener("click", closeSettings);
@@ -787,11 +792,15 @@
     minusBtn.addEventListener("click", removePlayer);
     playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
 
+    startBtn.addEventListener("click", start);
+    pauseBtn.addEventListener("click", pause);
+    resumeBtn.addEventListener("click", resume);
+    resetBtn.addEventListener("click", resetAll);
+
     // init
     setPicked(30_000);
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
-    // инициализируем имена
     state.names = Array.from({length: state.n}, (_, i) => state.names[i] ?? `Игрок ${i+1}`);
 
     buildNamesEditor();
