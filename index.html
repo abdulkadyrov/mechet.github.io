@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Словесные часы — круг по краям</title>
+  <title>Словесные часы</title>
   <style>
     :root{
       --bg:#070A14;
@@ -13,11 +13,11 @@
       --shadow: 0 14px 36px rgba(0,0,0,.45);
       --r: 18px;
 
-      --topH: 64px;
-      --bottomH: 84px;
+      --topH: 66px;
+      --bottomH: 90px;
 
-      --gap: 10px;
       --pad: 12px;
+      --gap: 10px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -29,9 +29,9 @@
         radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.10), transparent 60%),
         var(--bg);
       color:var(--text);
+      overflow:hidden;
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
-      overflow:hidden;
     }
 
     .screen{
@@ -84,12 +84,12 @@
 
     /* arena */
     .arena{
-      position:relative;
       padding: var(--pad);
       min-height:0;
+      position:relative;
     }
 
-    /* “Кольцо”: верх 2 карточки, низ 2 карточки, слева/справа по 2 вертикальные */
+    /* layout: 3x3, центр под тексты, по краям “слоты” */
     .ring{
       position:absolute;
       inset: var(--pad);
@@ -97,55 +97,80 @@
       gap: var(--gap);
       grid-template-columns: 1fr 1.25fr 1fr;
       grid-template-rows: 1fr 1fr 1fr;
-      align-items:stretch;
+      min-height:0;
     }
 
-    /* центр */
     .center{
       grid-column: 2;
       grid-row: 2;
       border-radius: 24px;
       border:1px dashed rgba(255,255,255,.16);
       background: rgba(255,255,255,.03);
+      position:relative;
+      overflow:hidden;
       display:grid;
       place-items:center;
+    }
+
+    .centerText{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform: translate(-50%,-50%);
+      width: 100%;
+      height: 100%;
+      pointer-events:none;
+    }
+    .ct{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform-origin:center;
+      font-weight: 950;
       text-align:center;
-      padding: 12px;
+      color: rgba(255,255,255,.92);
+      font-variant-numeric: tabular-nums;
+      line-height:1.12;
+      letter-spacing:.2px;
+      text-shadow: 0 10px 22px rgba(0,0,0,.45);
+      user-select:none;
+      padding: 6px 8px;
     }
-    .centerTitle{
-      font-size: 12px;
-      letter-spacing:.35px;
-      text-transform:uppercase;
-      color: var(--muted);
-      font-weight: 950;
-      margin-bottom:6px;
+    .ct .nm{font-size:12px; text-transform:uppercase; letter-spacing:.35px; opacity:.92}
+    .ct .tm{font-size:18px; margin-top:4px}
+
+    .ct.top    { transform: translate(-50%,-50%) translateY(-40%) rotate(180deg); }
+    .ct.right  { transform: translate(-50%,-50%) translateX(40%) rotate(270deg); }
+    .ct.bottom { transform: translate(-50%,-50%) translateY(40%) rotate(0deg); }
+    .ct.left   { transform: translate(-50%,-50%) translateX(-40%) rotate(90deg); }
+
+    /* slots */
+    .slot{
+      min-height:0;
+      display:none; /* показываем только нужные */
     }
-    .centerTurn{
-      font-size: 18px;
-      font-weight: 950;
-      line-height:1.15;
-      word-break: break-word;
+    .slot.stack{
+      display:none;
+      min-height:0;
+      gap: var(--gap);
     }
 
-    .stackRight{
-      grid-column:3;
-      grid-row:2 / 4;
-      display:grid;
-      gap: var(--gap);
-      grid-template-rows: 1fr 1fr;
-      min-height:0;
-    }
-    .stackLeft{
-      grid-column:1;
-      grid-row:2 / 4;
-      display:grid;
-      gap: var(--gap);
-      grid-template-rows: 1fr 1fr;
-      min-height:0;
-    }
+    /* fixed positions */
+    .s2 { grid-column:2; grid-row:1; }      /* top center */
+    .s1 { grid-column:2; grid-row:3; }      /* bottom center */
+    .sr { grid-column:3; grid-row:2; }      /* right middle (single) */
+    .sl { grid-column:1; grid-row:2; }      /* left middle (single) */
+    .srStack { grid-column:3; grid-row:2/4; display:grid; grid-template-rows:1fr 1fr; } /* right (two) */
+    .slStack { grid-column:1; grid-row:2/4; display:grid; grid-template-rows:1fr 1fr; } /* left (two) */
+    .br { grid-column:3; grid-row:3; }      /* bottom right */
+    .bl { grid-column:1; grid-row:3; }      /* bottom left */
+    .tr { grid-column:3; grid-row:1; }      /* top right */
+    .tl { grid-column:1; grid-row:1; }      /* top left */
 
-    /* cards */
+    /* player card */
     .player{
+      width:100%;
+      height:100%;
       border-radius: var(--r);
       border:1px solid rgba(255,255,255,.14);
       box-shadow: var(--shadow);
@@ -155,8 +180,7 @@
       position:relative;
       display:grid;
       place-items:center;
-      min-height:0;
-      transition: filter .12s ease, transform .12s ease, outline-color .12s ease;
+      transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
     }
     .player::before{
       content:"";
@@ -180,8 +204,8 @@
       justify-content:center;
       gap:10px;
     }
-    .nm{
-      font-size: 14px;
+    .name{
+      font-size: 13px;
       font-weight: 950;
       white-space:nowrap;
       overflow:hidden;
@@ -190,7 +214,7 @@
       text-transform: uppercase;
       letter-spacing:.25px;
     }
-    .tm{
+    .time{
       font-variant-numeric: tabular-nums;
       font-size: clamp(22px, 4.6vw, 34px);
       font-weight: 950;
@@ -211,11 +235,12 @@
       text-overflow:ellipsis;
     }
 
+    /* rotations (к центру) */
     .rot180 .inner{ transform: rotate(180deg); }
     .rot90  .inner{ transform: rotate(90deg); }
     .rot270 .inner{ transform: rotate(270deg); }
 
-    /* Активный + затемнение остальных */
+    /* active highlight + dim others (как ты выбрал) */
     .ring.hasActive .player{
       filter: brightness(.62) saturate(.7);
     }
@@ -240,12 +265,6 @@
       filter: grayscale(.2) brightness(.55);
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
-
-    /* placements */
-    .topL{ grid-column:1; grid-row:1; }
-    .topR{ grid-column:3; grid-row:1; }
-    .botL{ grid-column:1; grid-row:3; }
-    .botR{ grid-column:3; grid-row:3; }
 
     /* bottom */
     .bottom{
@@ -288,7 +307,7 @@
       background: rgba(255,255,255,.06);
     }
 
-    /* sheet */
+    /* sheet (settings) */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -296,6 +315,7 @@
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
+      z-index: 30;
     }
     .sheetOverlay.open{ opacity:1; pointer-events:auto; }
     .sheet{
@@ -309,6 +329,7 @@
         max(10px, env(safe-area-inset-right))
         max(10px, env(safe-area-inset-bottom))
         max(10px, env(safe-area-inset-left));
+      z-index: 31;
     }
     .sheet.open{ transform: translateY(0); }
     .sheetCard{
@@ -370,28 +391,45 @@
     <div class="top">
       <div class="topLeft">
         <div class="title">Словесные часы</div>
-        <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока: ход к следующему по кругу</div>
+        <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего</div>
       </div>
       <div class="pill" id="status">Готово</div>
     </div>
 
     <div class="arena">
       <div class="ring" id="ring">
-        <!-- top (2) -->
-        <div class="player rot180 topL" id="host-topL"></div>
-        <div class="player rot180 topR" id="host-topR"></div>
+        <!-- слоты (будем включать/выключать в JS) -->
+        <div class="slot s2" id="slot2"></div>  <!-- Player 2 (top) -->
+        <div class="slot s1" id="slot1"></div>  <!-- Player 1 (bottom) -->
 
-        <!-- left/right stacks (2+2) -->
-        <div class="stackLeft" id="stackLeft"></div>
-        <div class="stackRight" id="stackRight"></div>
+        <div class="slot sr" id="slot3"></div>  <!-- Player 3 (right) -->
+        <div class="slot sl" id="slot4"></div>  <!-- Player 4 (left) -->
 
-        <!-- bottom (2) -->
-        <div class="player botL" id="host-botL"></div>
-        <div class="player botR" id="host-botR"></div>
+        <div class="slot br" id="slot5"></div>  <!-- Player 5 (bottom-right) -->
+        <div class="slot bl" id="slot6"></div>  <!-- Player 6 (bottom-left) -->
+
+        <div class="slot tr" id="slot7"></div>  <!-- Player 7 (top-right) -->
+        <div class="slot tl" id="slot8"></div>  <!-- Player 8 (top-left) -->
 
         <div class="center">
-          <div class="centerTitle">Ход</div>
-          <div class="centerTurn" id="centerTurn">—</div>
+          <div class="centerText">
+            <div class="ct top">
+              <div class="nm" id="ctNameTop">—</div>
+              <div class="tm" id="ctTimeTop">00:00</div>
+            </div>
+            <div class="ct right">
+              <div class="nm" id="ctNameRight">—</div>
+              <div class="tm" id="ctTimeRight">00:00</div>
+            </div>
+            <div class="ct bottom">
+              <div class="nm" id="ctNameBottom">—</div>
+              <div class="tm" id="ctTimeBottom">00:00</div>
+            </div>
+            <div class="ct left">
+              <div class="nm" id="ctNameLeft">—</div>
+              <div class="tm" id="ctTimeLeft">00:00</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -429,16 +467,16 @@
         </div>
 
         <div class="row" style="margin-top:10px;">
-          <div class="label">Игроков (2/4/6/8)</div>
+          <div class="label">Игроков (2..8)</div>
           <div class="counter">
             <button class="btn miniBtn" id="minusBtn">−</button>
-            <div class="pill"><b id="playersCount">8</b></div>
+            <div class="pill"><b id="playersCount">2</b></div>
             <button class="btn miniBtn" id="plusBtn">+</button>
           </div>
         </div>
 
         <div class="row">
-          <input id="playersRange" type="range" min="2" max="8" step="2" value="8" style="width:100%"/>
+          <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
         </div>
 
         <div class="label" style="margin-top:10px;">Имена игроков</div>
@@ -462,36 +500,18 @@
     };
 
     const COLORS = [
-      { bg1:"#6D5CFF", bg2:"#4A33FF" },
-      { bg1:"#2FE07B", bg2:"#16B85E" },
-      { bg1:"#00C2FF", bg2:"#007CFF" },
-      { bg1:"#FFB020", bg2:"#FF7A00" },
-      { bg1:"#FF5C7A", bg2:"#E52B54" },
-      { bg1:"#A855F7", bg2:"#6D28D9" },
-      { bg1:"#22D3EE", bg2:"#0891B2" },
-      { bg1:"#FDE047", bg2:"#F59E0B" },
+      { bg1:"#6D5CFF", bg2:"#4A33FF" }, // 1
+      { bg1:"#2FE07B", bg2:"#16B85E" }, // 2
+      { bg1:"#00C2FF", bg2:"#007CFF" }, // 3
+      { bg1:"#FFB020", bg2:"#FF7A00" }, // 4
+      { bg1:"#FF5C7A", bg2:"#E52B54" }, // 5
+      { bg1:"#A855F7", bg2:"#6D28D9" }, // 6
+      { bg1:"#22D3EE", bg2:"#0891B2" }, // 7
+      { bg1:"#FDE047", bg2:"#F59E0B" }, // 8
     ];
-
-    // Порядок хода по кругу (как вокруг “стола”):
-    // topL -> topR -> rightTop -> rightBottom -> botR -> botL -> leftBottom -> leftTop -> (назад)
-    const ORDER_8 = [0,1,2,3,4,5,6,7];
-    const ORDER_6 = [0,1,2,3,4,5];
-    const ORDER_4 = [0,1,2,3];
-    const ORDER_2 = [0,1];
-
-    function orderFor(n){
-      if (n === 2) return ORDER_2;
-      if (n === 4) return ORDER_4;
-      if (n === 6) return ORDER_6;
-      return ORDER_8;
-    }
 
     // DOM
     const ringEl = document.getElementById("ring");
-    const stackLeft = document.getElementById("stackLeft");
-    const stackRight = document.getElementById("stackRight");
-    const centerTurn = document.getElementById("centerTurn");
-
     const hintTop = document.getElementById("hintTop");
     const statusEl = document.getElementById("status");
 
@@ -514,6 +534,26 @@
     const namesBox = document.getElementById("namesBox");
     const settingsNote = document.getElementById("settingsNote");
 
+    const ctNameTop = document.getElementById("ctNameTop");
+    const ctTimeTop = document.getElementById("ctTimeTop");
+    const ctNameRight = document.getElementById("ctNameRight");
+    const ctTimeRight = document.getElementById("ctTimeRight");
+    const ctNameBottom = document.getElementById("ctNameBottom");
+    const ctTimeBottom = document.getElementById("ctTimeBottom");
+    const ctNameLeft = document.getElementById("ctNameLeft");
+    const ctTimeLeft = document.getElementById("ctTimeLeft");
+
+    const slots = {
+      1: document.getElementById("slot1"),
+      2: document.getElementById("slot2"),
+      3: document.getElementById("slot3"),
+      4: document.getElementById("slot4"),
+      5: document.getElementById("slot5"),
+      6: document.getElementById("slot6"),
+      7: document.getElementById("slot7"),
+      8: document.getElementById("slot8"),
+    };
+
     function fillSelect(select, max){
       select.innerHTML = "";
       for (let i=0;i<=max;i++){
@@ -527,17 +567,16 @@
     fillSelect(ss, 59);
 
     const state = {
-      n: 8,
+      n: 2,
       baseMs: 30_000,
       times: [],
       names: [],
-      active: -1,
-      started: false,
-      running: false,
+      active: -1,        // кто сейчас тратит время
+      started: false,    // нажали Старт (подготовили раунд)
+      running: false,    // реально тикает
       paused: true,
       lastTs: 0,
       finished: new Set(),
-      order: orderFor(8),
     };
 
     function getPickedMs(){
@@ -553,18 +592,45 @@
       ss.value = String(total%60);
     }
 
+    // Порядок по кругу: 1->2->3->4->5->6->7->8->1
+    function nextAliveAfter(playerIndex0){
+      // playerIndex0: 0..n-1, следующий по кругу
+      for (let step=1; step<=state.n; step++){
+        const cand = (playerIndex0 + step) % state.n;
+        if (!state.finished.has(cand)) return cand;
+      }
+      return playerIndex0;
+    }
+
     function currentTurnName(){
       if (!state.running || state.paused || state.active < 0) return "—";
       return state.names[state.active] || `Игрок ${state.active+1}`;
+    }
+    function currentTurnTime(){
+      if (!state.running || state.paused || state.active < 0) return "00:00";
+      return msToText(state.times[state.active]);
+    }
+
+    function setCenterTexts(){
+      const nm = currentTurnName();
+      const tm = currentTurnTime();
+      ctNameTop.textContent = nm;
+      ctNameRight.textContent = nm;
+      ctNameBottom.textContent = nm;
+      ctNameLeft.textContent = nm;
+      ctTimeTop.textContent = tm;
+      ctTimeRight.textContent = tm;
+      ctTimeBottom.textContent = tm;
+      ctTimeLeft.textContent = tm;
     }
 
     function setStatusText(){
       if (!state.started){
         statusEl.textContent = "Готово";
-        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока: ход по кругу";
+        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего";
       } else if (!state.running){
         statusEl.textContent = "Ожидание";
-        hintTop.textContent = "Нажми игрока → ход перейдёт к следующему по кругу";
+        hintTop.textContent = "Нажми игрока X → пойдёт время у X+1 по кругу";
       } else if (state.paused){
         statusEl.textContent = "Пауза";
         hintTop.textContent = "Пауза";
@@ -572,7 +638,7 @@
         statusEl.textContent = "Идёт";
         hintTop.textContent = "Нажми игрока → ход к следующему по кругу";
       }
-      centerTurn.textContent = currentTurnName();
+      setCenterTexts();
     }
 
     function updateButtons(){
@@ -589,6 +655,7 @@
       plusBtn.disabled = locked;
       playersRange.disabled = locked;
       [...namesBox.querySelectorAll("input")].forEach(inp => inp.disabled = locked);
+
       settingsNote.textContent = locked
         ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
         : "Можно менять время/игроков/имена. Нажми «Старт», затем нажми игрока.";
@@ -610,9 +677,9 @@
         inp.value = state.names[i] ?? `Игрок ${i+1}`;
         inp.addEventListener("input", () => {
           state.names[i] = inp.value.trim() || `Игрок ${i+1}`;
-          const nm = document.getElementById(`nm-${i}`);
-          if (nm) nm.textContent = state.names[i];
-          setStatusText();
+          const nameEl = document.getElementById(`name-${i}`);
+          if (nameEl) nameEl.textContent = state.names[i];
+          setCenterTexts();
         });
 
         row.appendChild(label);
@@ -621,10 +688,10 @@
       }
     }
 
-    function makeCard(i, extraClass=""){
+    function makeCard(i){
       const c = COLORS[i % COLORS.length];
       const card = document.createElement("div");
-      card.className = `player ${extraClass}`.trim();
+      card.className = "player";
       card.dataset.i = String(i);
       card.style.background = `linear-gradient(180deg, ${c.bg1}, ${c.bg2})`;
 
@@ -632,13 +699,13 @@
       inner.className = "inner";
 
       const name = document.createElement("div");
-      name.className = "nm";
-      name.id = `nm-${i}`;
+      name.className = "name";
+      name.id = `name-${i}`;
       name.textContent = state.names[i] ?? `Игрок ${i+1}`;
 
       const time = document.createElement("div");
-      time.className = "tm";
-      time.id = `tm-${i}`;
+      time.className = "time";
+      time.id = `time-${i}`;
       time.textContent = msToText(state.times[i]);
 
       const sub = document.createElement("div");
@@ -655,79 +722,66 @@
       return card;
     }
 
-    function clearHosts(){
-      const hosts = ["host-topL","host-topR","host-botL","host-botR"];
-      for (const id of hosts){
-        const el = document.getElementById(id);
-        el.dataset.i = "";
-        el.style.background = "";
-        el.innerHTML = "";
-        // возвращаем базовый класс (ориентация сохраняется у top)
-        if (id === "host-topL" || id === "host-topR") el.className = "player rot180 " + (id==="host-topL"?"topL":"topR");
-        if (id === "host-botL") el.className = "player botL";
-        if (id === "host-botR") el.className = "player botR";
+    // СЛОТЫ по твоей логике добавления:
+    // 1: снизу (bottom center) normal
+    // 2: сверху (top center) rot180
+    // 3: справа (right middle) rot270 (чтобы “смотрел” к центру)
+    // 4: слева (left middle) rot90
+    // 5: справа снизу (bottom-right) normal
+    // 6: слева снизу (bottom-left) normal
+    // 7: справа сверху (top-right) rot180
+    // 8: слева сверху (top-left) rot180
+    function slotForPlayerNumber(p1to8){
+      return slots[p1to8];
+    }
+    function rotationClassForPlayerNumber(p){
+      if (p === 2) return "rot180";
+      if (p === 3) return "rot270";
+      if (p === 4) return "rot90";
+      if (p === 7) return "rot180";
+      if (p === 8) return "rot180";
+      return "";
+    }
+
+    function clearSlots(){
+      for (let p=1;p<=8;p++){
+        const s = slots[p];
+        s.style.display = "none";
+        s.innerHTML = "";
       }
-      stackLeft.innerHTML = "";
-      stackRight.innerHTML = "";
       ringEl.classList.remove("hasActive");
     }
 
-    function mountIntoHost(hostId, card){
-      const host = document.getElementById(hostId);
-      host.dataset.i = card.dataset.i;
-      host.style.background = card.style.background;
-      host.innerHTML = card.innerHTML;
-      // восстановим обработчик
-      host.onclick = null;
-      host.addEventListener("click", () => onTap(parseInt(card.dataset.i, 10)));
-      // подпись “sub” уже внутри, ок
-    }
-
     function buildLayout(){
-      clearHosts();
-      state.order = orderFor(state.n);
+      clearSlots();
 
-      // top: 0,1 всегда
-      if (state.n >= 1) mountIntoHost("host-topL", makeCard(0));
-      if (state.n >= 2) mountIntoHost("host-topR", makeCard(1));
+      for (let p=1; p<=state.n; p++){
+        const i = p - 1; // index 0..n-1
+        const slot = slotForPlayerNumber(p);
+        const card = makeCard(i);
+        const rot = rotationClassForPlayerNumber(p);
+        if (rot) card.classList.add(rot);
 
-      // right stack: 2,3 (если есть)
-      if (state.n >= 3) stackRight.appendChild(makeCard(2, "rot270"));
-      if (state.n >= 4) stackRight.appendChild(makeCard(3, "rot270"));
-
-      // bottom: 4,5 (если есть)
-      if (state.n >= 5) mountIntoHost("host-botR", makeCard(4));
-      if (state.n >= 6) mountIntoHost("host-botL", makeCard(5));
-
-      // left stack: 6,7 (если есть) — верхний это 7, нижний 6
-      if (state.n >= 8){
-        stackLeft.appendChild(makeCard(7, "rot90"));
-        stackLeft.appendChild(makeCard(6, "rot90"));
-      } else if (state.n >= 7){
-        stackLeft.appendChild(makeCard(6, "rot90"));
+        slot.style.display = "block";
+        slot.appendChild(card);
       }
 
       renderAll();
     }
 
     function renderAll(){
-      const allCards = [
-        ...ringEl.querySelectorAll(".player"),
-        ...stackLeft.querySelectorAll(".player"),
-        ...stackRight.querySelectorAll(".player")
-      ];
-
+      const cards = [...ringEl.querySelectorAll(".player")];
       const hasActive = state.running && !state.paused && state.active >= 0;
       ringEl.classList.toggle("hasActive", hasActive);
 
-      allCards.forEach(el => {
-        const i = parseInt(el.dataset.i || "-1", 10);
+      cards.forEach(el => {
+        const i = parseInt(el.dataset.i, 10);
         el.classList.toggle("active", hasActive && i === state.active);
-        el.classList.toggle("lost", i >= 0 && state.finished.has(i));
+        el.classList.toggle("lost", state.finished.has(i));
       });
 
       for (let i=0;i<state.n;i++){
-        const tEl = document.getElementById(`tm-${i}`);
+        const tEl = document.getElementById(`time-${i}`);
         if (tEl) tEl.textContent = msToText(state.times[i]);
 
         const sEl = document.getElementById(`sub-${i}`);
@@ -735,9 +789,9 @@
 
         if (state.finished.has(i)) sEl.textContent = "Вышло";
         else if (!state.started) sEl.textContent = "После Старт";
-        else if (!state.running) sEl.textContent = "Нажми → ход по кругу";
+        else if (!state.running) sEl.textContent = "Нажми → ход следующему";
         else if (state.paused) sEl.textContent = "Пауза";
-        else sEl.textContent = (i === state.active) ? "Сейчас идёт" : "Нажми → ход по кругу";
+        else sEl.textContent = (i === state.active) ? "Сейчас идёт" : "Нажми → ход следующему";
       }
 
       playersCount.textContent = String(state.n);
@@ -748,26 +802,14 @@
       updateSettingsLock();
     }
 
-    function nextAliveFrom(i){
-      const order = state.order;
-      const pos = order.indexOf(i);
-      if (pos === -1) return i;
-
-      for (let step=1; step<=order.length; step++){
-        const cand = order[(pos + step) % order.length];
-        if (!state.finished.has(cand)) return cand;
-      }
-      return i;
-    }
-
-    // Нажал игрок i -> ход к следующему по кругу
+    // Режим: нажал игрок i -> начинает идти время у (i+1) по кругу
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
       if (state.finished.size >= state.n) return;
       if (state.finished.has(i)) return;
 
-      const next = nextAliveFrom(i);
+      const next = nextAliveAfter(i);
 
       if (!state.running){
         state.running = true;
@@ -823,20 +865,9 @@
       renderAll();
     }
 
-    function normalizePlayers(n){
-      n = Math.max(2, Math.min(8, n));
-      // только 2/4/6/8
-      if (n % 2 !== 0) n += 1;
-      if (n === 3) n = 4;
-      if (n === 5) n = 6;
-      if (n === 7) n = 8;
-      return n;
-    }
-
     function setPlayersCount(n){
       if (state.started) return;
-      state.n = normalizePlayers(n);
-
+      state.n = Math.max(2, Math.min(8, n));
       state.baseMs = getPickedMs();
       state.times = Array.from({length: state.n}, () => state.baseMs);
 
@@ -850,8 +881,8 @@
       buildLayout();
     }
 
-    function addPlayer(){ setPlayersCount(state.n + 2); }
-    function removePlayer(){ setPlayersCount(state.n - 2); }
+    function addPlayer(){ setPlayersCount(state.n + 1); }
+    function removePlayer(){ setPlayersCount(state.n - 1); }
 
     function onTimeChange(){
       if (state.started) return;
@@ -879,13 +910,14 @@
           state.finished.add(state.active);
 
           if (state.finished.size < state.n){
-            state.active = nextAliveFrom(state.active);
+            state.active = nextAliveAfter(state.active);
           }
           renderAll();
         } else {
-          const tEl = document.getElementById(`tm-${state.active}`);
+          // обновляем только активный таймер + центр
+          const tEl = document.getElementById(`time-${state.active}`);
           if (tEl) tEl.textContent = msToText(state.times[state.active]);
-          centerTurn.textContent = currentTurnName();
+          setCenterTexts();
         }
       }
 
@@ -905,6 +937,12 @@
       sheet.setAttribute("aria-hidden", "true");
     }
 
+    // events
+    startBtn.addEventListener("click", start);
+    pauseBtn.addEventListener("click", pause);
+    resumeBtn.addEventListener("click", resume);
+    resetBtn.addEventListener("click", resetAll);
+
     settingsBtn.addEventListener("click", openSettings);
     closeSettingsBtn.addEventListener("click", closeSettings);
     overlay.addEventListener("click", closeSettings);
@@ -916,12 +954,7 @@
     minusBtn.addEventListener("click", removePlayer);
     playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
 
-    startBtn.addEventListener("click", start);
-    pauseBtn.addEventListener("click", pause);
-    resumeBtn.addEventListener("click", resume);
-    resetBtn.addEventListener("click", resetAll);
-
-    // init
+    // init defaults (как ты хотел: по умолчанию 2 игрока)
     setPicked(30_000);
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
