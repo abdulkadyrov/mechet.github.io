@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Словесные часы</title>
   <style>
     :root{
@@ -11,17 +11,17 @@
       --muted:rgba(243,246,255,.72);
       --border:rgba(255,255,255,.12);
       --shadow: 0 14px 36px rgba(0,0,0,.45);
-      --r: 18px;
+      --r: 22px;
 
       --pad: 12px;
-      --gap: 10px;
+      --gap: 12px;
 
-      --topH: 66px;
-      --bottomH: 96px;
+      --topH: 64px;
+      --bottomH: 92px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    html{ overflow-x:hidden; }
+    html{ overflow:hidden; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -33,14 +33,14 @@
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
 
-      /* можно скроллить только вниз/вверх (если нужно), по X нельзя */
-      overflow-x:hidden;
-      overflow-y:auto;
-      touch-action: pan-y;
+      /* без скроллинга страницы */
+      overflow:hidden;
+      touch-action: manipulation;
     }
 
     .screen{
-      min-height: 100svh;
+      position:fixed;
+      inset:0;
       display:grid;
       grid-template-rows: var(--topH) 1fr var(--bottomH);
       padding:
@@ -50,7 +50,7 @@
         env(safe-area-inset-left);
     }
 
-    /* top sticky */
+    /* top */
     .top{
       display:flex;
       align-items:center;
@@ -58,11 +58,7 @@
       gap:10px;
       padding: 10px 12px;
       min-width:0;
-
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(7,10,20,.86);
+      background: rgba(7,10,20,.72);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
@@ -98,70 +94,45 @@
       padding: var(--pad);
       min-height:0;
       display:grid;
-      place-items:center;
+      place-items:stretch;
     }
 
-    /* схема как на твоих скринах:
-       - верх: 2 больших таймера (игрок 8 слева, игрок 2 справа) — оба rot180
-       - низ: 2 больших таймера (игрок 8 слева, игрок 1 справа) — normal
-       - слева: 2 вертикальных (игрок 4 сверху, игрок 5 снизу) — rot90
-       - справа: 2 вертикальных (игрок 3 сверху, игрок 6 снизу) — rot270
-       При меньшем числе игроков показываем подмножество:
-       2: верх(2) + низ(1)
-       3: + правый верх (3)
-       4: + левый верх (4)
-       5: + левый низ (5)
-       6: + правый низ (6)
-       7: + верх левый (8)  (на твоих схемах сверху появляется второй таймер)
-       8: + низ левый (7?) — но по схеме у тебя 8 сверху слева и 8 снизу слева были разными игроками.
-       Чтобы совпасть с твоими картинками: используем ФИКСИРОВАННЫЕ СЛОТЫ ПО НОМЕРУ ИГРОКА:
-         1 -> bottom-right (normal)
-         2 -> top-right (rot180)
-         3 -> right-top (rot270)
-         4 -> left-top (rot90)
-         5 -> left-bottom (rot90)
-         6 -> right-bottom (rot270)
-         7 -> bottom-left (normal)
-         8 -> top-left (rot180)
-    */
+    /* Ring layout (как на твоём скрине): 8 слотов вокруг пустого центра */
     .ring{
-      width: min(980px, 100%);
+      width: 100%;
+      height: 100%;
       display:grid;
       gap: var(--gap);
-
-      grid-template-columns: 1.2fr 1fr 1fr 1.2fr;
+      grid-template-columns: 1.25fr 1fr 1fr 1.25fr;
       grid-template-rows: 1fr 1fr 1fr 1fr;
-
-      /* стараемся влезать в экран, если нет — будет вертикальный скролл */
-      height: min(72svh, 760px);
+      min-height:0;
     }
 
-    /* центр пустой */
     .centerEmpty{
       grid-column: 2 / 4;
       grid-row: 2 / 4;
-      border-radius: 24px;
+      border-radius: 26px;
       border:1px dashed rgba(255,255,255,.10);
       background: rgba(255,255,255,.02);
     }
 
     .slot{ display:none; min-height:0; }
 
-    /* TOP */
-    .slot8{ grid-column: 1 / 3; grid-row: 1; } /* 8 top-left big */
-    .slot2{ grid-column: 3 / 5; grid-row: 1; } /* 2 top-right big */
+    /* TOP (два больших) */
+    .slot8{ grid-column: 1 / 3; grid-row: 1; }
+    .slot2{ grid-column: 3 / 5; grid-row: 1; }
 
-    /* LEFT vertical (2 rows high each) */
+    /* LEFT (два вертикальных) */
     .slot4{ grid-column: 1; grid-row: 2 / 3; }
     .slot5{ grid-column: 1; grid-row: 3 / 4; }
 
-    /* RIGHT vertical */
+    /* RIGHT (два вертикальных) */
     .slot3{ grid-column: 4; grid-row: 2 / 3; }
     .slot6{ grid-column: 4; grid-row: 3 / 4; }
 
-    /* BOTTOM */
-    .slot7{ grid-column: 1 / 3; grid-row: 4; } /* 7 bottom-left big */
-    .slot1{ grid-column: 3 / 5; grid-row: 4; } /* 1 bottom-right big */
+    /* BOTTOM (два больших) */
+    .slot7{ grid-column: 1 / 3; grid-row: 4; }
+    .slot1{ grid-column: 3 / 5; grid-row: 4; }
 
     /* card */
     .player{
@@ -176,15 +147,15 @@
       position:relative;
       display:grid;
       place-items:center;
-      transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
       min-height:0;
+      transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
     }
     .player::before{
       content:"";
       position:absolute;
       inset:0;
       background:
-        radial-gradient(140px 140px at 20% 15%, rgba(255,255,255,.26), transparent 60%),
+        radial-gradient(180px 180px at 20% 15%, rgba(255,255,255,.26), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,0));
       mix-blend-mode: overlay;
       opacity:.60;
@@ -195,16 +166,16 @@
       position:relative;
       width:100%;
       height:100%;
-      padding: 12px;
+      padding: 14px;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:7px;
+      gap:10px;
       text-align:center;
     }
     .name{
-      font-size: clamp(11px, 2.0vw, 14px);
+      font-size: clamp(12px, 2.2vw, 16px);
       font-weight: 950;
       text-transform: uppercase;
       letter-spacing:.25px;
@@ -213,16 +184,17 @@
       text-overflow:ellipsis;
       max-width: 92%;
     }
+    /* СДЕЛАЛ БОЛЬШЕ */
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(22px, 5.2vw, 44px);
+      font-size: clamp(30px, 7.2vw, 58px);
       font-weight: 950;
-      letter-spacing:.6px;
+      letter-spacing:.8px;
       line-height:1;
       white-space:nowrap;
     }
     .sub{
-      font-size: clamp(10px, 2.0vw, 12px);
+      font-size: clamp(11px, 2.1vw, 14px);
       font-weight: 950;
       opacity:.92;
       white-space:nowrap;
@@ -246,8 +218,8 @@
     }
     .ring.hasActive .player.active{
       filter:none;
-      outline: 5px solid rgba(255,255,255,.78);
-      outline-offset: -5px;
+      outline: 6px solid rgba(255,255,255,.80);
+      outline-offset: -6px;
       transform: translateY(-1px);
     }
     .ring.hasActive .player.active::after{ background: rgba(0,0,0,0); }
@@ -259,25 +231,20 @@
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
-    /* bottom sticky */
+    /* bottom */
     .bottom{
       padding: 10px 12px 12px;
       border-top: 1px solid rgba(255,255,255,.06);
-      background: rgba(5,7,16,.70);
+      background: rgba(5,7,16,.72);
       backdrop-filter: blur(10px);
-
-      position: sticky;
-      bottom: 0;
-      z-index: 10;
     }
     .bottomInner{
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:10px;
+      justify-content:flex-start; /* <-- рядом */
+      gap:8px;
       flex-wrap:wrap;
     }
-    .btnRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
     .btn{
       appearance:none;
       border:1px solid rgba(255,255,255,.14);
@@ -302,11 +269,11 @@
       border-color: rgba(255,92,122,.40);
     }
     .btn.ghost{
-      min-width: 132px;
       background: rgba(255,255,255,.06);
+      min-width: 132px;
     }
 
-    /* Settings sheet: scroll inside */
+    /* Settings sheet (скролл только внутри настроек) */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -335,7 +302,7 @@
       border-radius: 20px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(10,14,28,.92);
-      box-shadow: 0 14px 36px rgba(0,0,0,.45);
+      box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
       max-height: 78svh;
       display:flex;
@@ -415,15 +382,11 @@
 
     <div class="bottom">
       <div class="bottomInner">
-        <div class="btnRow">
-          <button class="btn primary" id="startBtn">Старт</button>
-          <button class="btn" id="pauseBtn" disabled>Пауза</button>
-          <button class="btn" id="resumeBtn" disabled>Продолжить</button>
-          <button class="btn danger" id="resetBtn">Сброс</button>
-        </div>
-        <div class="btnRow">
-          <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
-        </div>
+        <button class="btn primary" id="startBtn">Старт</button>
+        <button class="btn" id="pauseBtn" disabled>Пауза</button>
+        <button class="btn" id="resumeBtn" disabled>Продолжить</button>
+        <button class="btn danger" id="resetBtn">Сброс</button>
+        <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
       </div>
     </div>
   </div>
@@ -667,12 +630,20 @@
       return card;
     }
 
-    // ФИКС позиции по номеру игрока (как на твоих схемах)
+    // Фикс-слоты по номеру игрока:
+    // 1 -> bottom-right (normal)
+    // 2 -> top-right (rot180)
+    // 3 -> right-top (rot270)
+    // 4 -> left-top (rot90)
+    // 5 -> left-bottom (rot90)
+    // 6 -> right-bottom (rot270)
+    // 7 -> bottom-left (normal)
+    // 8 -> top-left (rot180)
     function rotationForPlayer(p){
-      if (p === 2 || p === 8) return "rot180"; // верх
-      if (p === 3 || p === 6) return "rot270"; // справа
-      if (p === 4 || p === 5) return "rot90";  // слева
-      return ""; // низ
+      if (p === 2 || p === 8) return "rot180";
+      if (p === 3 || p === 6) return "rot270";
+      if (p === 4 || p === 5) return "rot90";
+      return "";
     }
 
     function clearSlots(){
@@ -730,7 +701,6 @@
       updateSettingsLock();
     }
 
-    // режим: нажал игрок i -> начинает идти время у (i+1) по кругу
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
@@ -850,7 +820,7 @@
       requestAnimationFrame(tick);
     }
 
-    // settings sheet
+    // sheet
     function openSettings(){
       overlay.classList.add("open");
       sheet.classList.add("open");
