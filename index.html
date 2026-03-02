@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
   <title>Словесные часы</title>
   <style>
     :root{
@@ -16,13 +16,12 @@
       --pad: 12px;
       --gap: 10px;
 
-      --topH: 66px;
-      --bottomH: 98px;
+      --topH: 64px;
+      --bottomH: 90px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-
-    /* Включаем прокрутку страницы */
+    html{ overflow-x:hidden; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -31,15 +30,18 @@
         radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.10), transparent 60%),
         var(--bg);
       color:var(--text);
-      overflow-y:auto;
-      overflow-x:hidden;
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
+
+      /* Игровой экран без прокрутки */
+      overflow:hidden;
+      touch-action: pan-y;
     }
 
-    /* НЕ fixed: чтобы можно было листать */
+    /* Игра — fixed и без скролла */
     .screen{
-      min-height: 100svh;
+      position:fixed;
+      inset:0;
       display:grid;
       grid-template-rows: var(--topH) 1fr var(--bottomH);
       padding:
@@ -49,7 +51,7 @@
         env(safe-area-inset-left);
     }
 
-    /* top sticky */
+    /* top */
     .top{
       display:flex;
       align-items:center;
@@ -57,11 +59,7 @@
       gap:10px;
       padding: 10px 12px;
       min-width:0;
-
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(7,10,20,.86);
+      background: rgba(7,10,20,.70);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
@@ -95,84 +93,49 @@
     /* arena */
     .arena{
       padding: var(--pad);
-      position:relative;
-      min-height: 580px; /* чтобы был смысл скроллить на маленьких экранах */
+      min-height:0;
+      display:grid;
+      place-items:stretch;
     }
 
-    /* layout 3x3 (центр больше) */
+    /* 4x4 кольцо: по 2 сверху/снизу/слева/справа, центр пустой */
     .ring{
-      width: min(980px, 100%);
-      margin: 0 auto;
+      width:100%;
+      height:100%;
       display:grid;
       gap: var(--gap);
-      grid-template-columns: 1fr 1.55fr 1fr; /* центр шире */
-      grid-template-rows: 1fr 1.35fr 1fr;   /* центр выше */
-      min-height: min(78svh, 720px);
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr 1fr;
+      min-height:0;
     }
 
-    /* центр */
-    .center{
-      grid-column: 2;
-      grid-row: 2;
-      border-radius: 26px;
-      border:1px dashed rgba(255,255,255,.18);
-      background: rgba(255,255,255,.04);
-      position:relative;
-      overflow:hidden;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
-    }
-    .centerText{
-      position:absolute;
-      inset: 0;
-      pointer-events:none;
-    }
-    .ct{
-      position:absolute;
-      left:50%;
-      top:50%;
-      transform-origin:center;
-      text-align:center;
-      font-weight: 950;
-      color: rgba(255,255,255,.93);
-      font-variant-numeric: tabular-nums;
-      line-height:1.12;
-      text-shadow: 0 10px 22px rgba(0,0,0,.45);
-      user-select:none;
-      width: 68%;
-    }
+    /* слоты (всего 8) */
+    .slot{ display:none; min-height:0; }
 
-    /* Авто-размер шрифта через clamp + JS-доп. подстройка */
-    .ct .nm{
-      font-size: clamp(11px, 1.6vw, 16px);
-      text-transform:uppercase;
-      letter-spacing:.35px;
-      opacity:.92;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    /* TOP (2) */
+    .p2{ grid-column:2; grid-row:1; } /* Player 2 (верх, перевёрнут) */
+    .p7{ grid-column:3; grid-row:1; } /* Player 7 (верх, перевёрнут) */
+
+    /* RIGHT (2) */
+    .p3{ grid-column:4; grid-row:2; } /* Player 3 (право, вертикально) */
+    .p5{ grid-column:4; grid-row:3; } /* Player 5 (право, вертикально) */
+
+    /* BOTTOM (2) */
+    .p6{ grid-column:2; grid-row:4; } /* Player 6 (низ) */
+    .p1{ grid-column:3; grid-row:4; } /* Player 1 (низ) */
+
+    /* LEFT (2) */
+    .p8{ grid-column:1; grid-row:2; } /* Player 8 (лево, вертикально) */
+    .p4{ grid-column:1; grid-row:3; } /* Player 4 (лево, вертикально) */
+
+    /* center empty */
+    .centerEmpty{
+      grid-column:2 / 4;
+      grid-row:2 / 4;
+      border-radius: 24px;
+      border:1px dashed rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
     }
-    .ct .tm{
-      font-size: clamp(16px, 2.4vw, 26px);
-      margin-top: 5px;
-      white-space:nowrap;
-    }
-
-    .ct.top    { transform: translate(-50%,-50%) translateY(-44%) rotate(180deg); }
-    .ct.right  { transform: translate(-50%,-50%) translateX(44%) rotate(270deg); }
-    .ct.bottom { transform: translate(-50%,-50%) translateY(44%) rotate(0deg); }
-    .ct.left   { transform: translate(-50%,-50%) translateX(-44%) rotate(90deg); }
-
-    /* slots */
-    .slot{ min-height:0; display:none; }
-
-    .s2 { grid-column:2; grid-row:1; } /* top center */
-    .s1 { grid-column:2; grid-row:3; } /* bottom center */
-    .sr { grid-column:3; grid-row:2; } /* right middle */
-    .sl { grid-column:1; grid-row:2; } /* left middle */
-    .br { grid-column:3; grid-row:3; } /* bottom right */
-    .bl { grid-column:1; grid-row:3; } /* bottom left */
-    .tr { grid-column:3; grid-row:1; } /* top right */
-    .tl { grid-column:1; grid-row:1; } /* top left */
 
     /* player card */
     .player{
@@ -188,6 +151,7 @@
       display:grid;
       place-items:center;
       transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
+      min-height:0;
     }
     .player::before{
       content:"";
@@ -207,50 +171,47 @@
       height:100%;
       padding: 12px;
       display:flex;
+      flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:10px;
+      gap:7px;
+      text-align:center;
     }
     .name{
-      font-size: 13px;
+      font-size: clamp(11px, 2.2vw, 13px);
       font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing:.25px;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 58%;
-      text-transform: uppercase;
-      letter-spacing:.25px;
+      max-width: 92%;
     }
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(22px, 4.4vw, 34px);
+      font-size: clamp(20px, 4.6vw, 34px);
       font-weight: 950;
       letter-spacing:.6px;
       white-space:nowrap;
+      line-height:1;
     }
     .sub{
-      position:absolute;
-      bottom: 10px;
-      left: 12px;
-      right: 12px;
-      text-align:center;
-      font-size: 12px;
+      font-size: clamp(10px, 2.0vw, 12px);
       font-weight: 950;
       opacity:.92;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
+      max-width: 92%;
     }
 
-    /* rotations (к центру) */
+    /* rotations so they “look” to center */
     .rot180 .inner{ transform: rotate(180deg); }
     .rot90  .inner{ transform: rotate(90deg); }
     .rot270 .inner{ transform: rotate(270deg); }
 
     /* active highlight + dim others */
-    .ring.hasActive .player{
-      filter: brightness(.62) saturate(.7);
-    }
+    .ring.hasActive .player{ filter: brightness(.62) saturate(.7); }
     .ring.hasActive .player::after{
       content:"";
       position:absolute;
@@ -273,16 +234,12 @@
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
-    /* bottom sticky (чтобы кнопки всегда доступны; при этом страницу можно скроллить) */
+    /* bottom */
     .bottom{
       padding: 10px 12px 12px;
       border-top: 1px solid rgba(255,255,255,.06);
       background: rgba(5,7,16,.70);
       backdrop-filter: blur(10px);
-
-      position: sticky;
-      bottom: 0;
-      z-index: 10;
     }
     .bottomInner{
       display:flex;
@@ -320,7 +277,7 @@
       background: rgba(255,255,255,.06);
     }
 
-    /* sheet (settings) */
+    /* Settings sheet: скролл только внутри настроек */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -369,7 +326,7 @@
     .sheetClose{ min-width: 96px; }
     .sheetBody{
       padding: 12px;
-      overflow:auto;
+      overflow:auto; /* <-- скролл только тут */
       -webkit-overflow-scrolling: touch;
     }
     .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
@@ -411,39 +368,21 @@
 
     <div class="arena">
       <div class="ring" id="ring">
-        <!-- слоты -->
-        <div class="slot s2" id="slot2"></div>  <!-- Player 2 -->
-        <div class="slot s1" id="slot1"></div>  <!-- Player 1 -->
+        <!-- пустой центр -->
+        <div class="centerEmpty"></div>
 
-        <div class="slot sr" id="slot3"></div>  <!-- Player 3 -->
-        <div class="slot sl" id="slot4"></div>  <!-- Player 4 -->
+        <!-- СЛОТЫ (фиксированные 8 мест по краям) -->
+        <div class="slot p2" id="slot2"></div>
+        <div class="slot p7" id="slot7"></div>
 
-        <div class="slot br" id="slot5"></div>  <!-- Player 5 -->
-        <div class="slot bl" id="slot6"></div>  <!-- Player 6 -->
+        <div class="slot p3" id="slot3"></div>
+        <div class="slot p5" id="slot5"></div>
 
-        <div class="slot tr" id="slot7"></div>  <!-- Player 7 -->
-        <div class="slot tl" id="slot8"></div>  <!-- Player 8 -->
+        <div class="slot p6" id="slot6"></div>
+        <div class="slot p1" id="slot1"></div>
 
-        <div class="center">
-          <div class="centerText">
-            <div class="ct top">
-              <div class="nm" id="ctNameTop">—</div>
-              <div class="tm" id="ctTimeTop">00:00</div>
-            </div>
-            <div class="ct right">
-              <div class="nm" id="ctNameRight">—</div>
-              <div class="tm" id="ctTimeRight">00:00</div>
-            </div>
-            <div class="ct bottom">
-              <div class="nm" id="ctNameBottom">—</div>
-              <div class="tm" id="ctTimeBottom">00:00</div>
-            </div>
-            <div class="ct left">
-              <div class="nm" id="ctNameLeft">—</div>
-              <div class="tm" id="ctTimeLeft">00:00</div>
-            </div>
-          </div>
-        </div>
+        <div class="slot p8" id="slot8"></div>
+        <div class="slot p4" id="slot4"></div>
       </div>
     </div>
 
@@ -549,15 +488,6 @@
     const namesBox = document.getElementById("namesBox");
     const settingsNote = document.getElementById("settingsNote");
 
-    const ctNameTop = document.getElementById("ctNameTop");
-    const ctTimeTop = document.getElementById("ctTimeTop");
-    const ctNameRight = document.getElementById("ctNameRight");
-    const ctTimeRight = document.getElementById("ctTimeRight");
-    const ctNameBottom = document.getElementById("ctNameBottom");
-    const ctTimeBottom = document.getElementById("ctTimeBottom");
-    const ctNameLeft = document.getElementById("ctNameLeft");
-    const ctTimeLeft = document.getElementById("ctTimeLeft");
-
     const slots = {
       1: document.getElementById("slot1"),
       2: document.getElementById("slot2"),
@@ -607,51 +537,12 @@
       ss.value = String(total%60);
     }
 
-    // следующий живой после i
     function nextAliveAfter(i){
       for (let step=1; step<=state.n; step++){
         const cand = (i + step) % state.n;
         if (!state.finished.has(cand)) return cand;
       }
       return i;
-    }
-
-    function currentTurnName(){
-      if (!state.running || state.paused || state.active < 0) return "—";
-      return state.names[state.active] || `Игрок ${state.active+1}`;
-    }
-    function currentTurnTime(){
-      if (!state.running || state.paused || state.active < 0) return "00:00";
-      return msToText(state.times[state.active]);
-    }
-
-    // Автоподбор размера имени в центре (чтобы не налезало)
-    function fitCenterName(text){
-      const len = (text || "").length;
-      // грубая, но рабочая шкала
-      if (len <= 10) return 1.0;
-      if (len <= 16) return 0.92;
-      if (len <= 22) return 0.84;
-      if (len <= 28) return 0.76;
-      return 0.68;
-    }
-
-    function setCenterTexts(){
-      const nm = currentTurnName();
-      const tm = currentTurnTime();
-
-      const scale = fitCenterName(nm);
-      // применяем scale только к строке имени
-      for (const el of [ctNameTop, ctNameRight, ctNameBottom, ctNameLeft]){
-        el.textContent = nm;
-        el.style.transform = `scale(${scale})`;
-        el.style.transformOrigin = "center";
-      }
-
-      ctTimeTop.textContent = tm;
-      ctTimeRight.textContent = tm;
-      ctTimeBottom.textContent = tm;
-      ctTimeLeft.textContent = tm;
     }
 
     function setStatusText(){
@@ -668,7 +559,6 @@
         statusEl.textContent = "Идёт";
         hintTop.textContent = "Нажми игрока → ход к следующему по кругу";
       }
-      setCenterTexts();
     }
 
     function updateButtons(){
@@ -709,7 +599,6 @@
           state.names[i] = inp.value.trim() || `Игрок ${i+1}`;
           const nameEl = document.getElementById(`name-${i}`);
           if (nameEl) nameEl.textContent = state.names[i];
-          setCenterTexts();
         });
 
         row.appendChild(label);
@@ -745,21 +634,28 @@
 
       inner.appendChild(name);
       inner.appendChild(time);
+      inner.appendChild(sub);
       card.appendChild(inner);
-      card.appendChild(sub);
 
       card.addEventListener("click", () => onTap(i));
       return card;
     }
 
-    // Слоты по твоей логике:
-    // 1 снизу, 2 сверху (перевёрнут), 3 справа, 4 слева, 5 справа-снизу, 6 слева-снизу, 7 справа-сверху, 8 слева-сверху
+    // Расстановка по краям (фикс. места). Добавление идёт 1..8.
+    // 1: bottom-right (у нас p1 внизу справа) — норм
+    // 2: top-left-of-center (p2 сверху слева из двух) — rot180
+    // 3: right-top — rot270
+    // 4: left-bottom — rot90
+    // 5: right-bottom — rot270
+    // 6: bottom-left — норм
+    // 7: top-right — rot180
+    // 8: left-top — rot90
+    //
+    // Если у тебя другой порядок (например 4 и 8 местами) — скажи, поменяю.
     function rotationClassForPlayerNumber(p){
-      if (p === 2) return "rot180";
-      if (p === 3) return "rot270";
-      if (p === 4) return "rot90";
-      if (p === 7) return "rot180";
-      if (p === 8) return "rot180";
+      if (p === 2 || p === 7) return "rot180";
+      if (p === 3 || p === 5) return "rot270";
+      if (p === 4 || p === 8) return "rot90";
       return "";
     }
 
@@ -774,7 +670,6 @@
 
     function buildLayout(){
       clearSlots();
-
       for (let p=1; p<=state.n; p++){
         const i = p - 1;
         const slot = slots[p];
@@ -785,7 +680,6 @@
         slot.style.display = "block";
         slot.appendChild(card);
       }
-
       renderAll();
     }
 
@@ -936,7 +830,6 @@
         } else {
           const tEl = document.getElementById(`time-${state.active}`);
           if (tEl) tEl.textContent = msToText(state.times[state.active]);
-          setCenterTexts();
         }
       }
 
