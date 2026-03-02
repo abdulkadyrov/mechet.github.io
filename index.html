@@ -33,13 +33,10 @@
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
 
-      /* Разрешаем скролл ТОЛЬКО по вертикали */
+      /* можно скроллить только вниз/вверх (если нужно), по X нельзя */
       overflow-x:hidden;
       overflow-y:auto;
       touch-action: pan-y;
-
-      /* чтобы игра занимала высоту, но можно было прокрутить если не влезло */
-      min-height: 100svh;
     }
 
     .screen{
@@ -100,41 +97,46 @@
     .arena{
       padding: var(--pad);
       min-height:0;
+      display:grid;
+      place-items:center;
     }
 
-    /* РИНГ из слотов (как ты просил): 2 сверху/2 снизу/2 справа/2 слева */
+    /* схема как на твоих скринах:
+       - верх: 2 больших таймера (игрок 8 слева, игрок 2 справа) — оба rot180
+       - низ: 2 больших таймера (игрок 8 слева, игрок 1 справа) — normal
+       - слева: 2 вертикальных (игрок 4 сверху, игрок 5 снизу) — rot90
+       - справа: 2 вертикальных (игрок 3 сверху, игрок 6 снизу) — rot270
+       При меньшем числе игроков показываем подмножество:
+       2: верх(2) + низ(1)
+       3: + правый верх (3)
+       4: + левый верх (4)
+       5: + левый низ (5)
+       6: + правый низ (6)
+       7: + верх левый (8)  (на твоих схемах сверху появляется второй таймер)
+       8: + низ левый (7?) — но по схеме у тебя 8 сверху слева и 8 снизу слева были разными игроками.
+       Чтобы совпасть с твоими картинками: используем ФИКСИРОВАННЫЕ СЛОТЫ ПО НОМЕРУ ИГРОКА:
+         1 -> bottom-right (normal)
+         2 -> top-right (rot180)
+         3 -> right-top (rot270)
+         4 -> left-top (rot90)
+         5 -> left-bottom (rot90)
+         6 -> right-bottom (rot270)
+         7 -> bottom-left (normal)
+         8 -> top-left (rot180)
+    */
     .ring{
       width: min(980px, 100%);
-      margin: 0 auto;
       display:grid;
       gap: var(--gap);
 
-      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-columns: 1.2fr 1fr 1fr 1.2fr;
       grid-template-rows: 1fr 1fr 1fr 1fr;
 
-      /* чтобы влезало на экран; если не влезло — будет вертикальный скролл body */
+      /* стараемся влезать в экран, если нет — будет вертикальный скролл */
       height: min(72svh, 760px);
     }
 
-    .slot{ display:none; min-height:0; }
-
-    /* TOP 2 */
-    .s2{ grid-column: 2; grid-row: 1; } /* игрок 2 (верх) */
-    .s7{ grid-column: 3; grid-row: 1; } /* игрок 7 (верх) */
-
-    /* RIGHT 2 */
-    .s3{ grid-column: 4; grid-row: 2; } /* игрок 3 (право) */
-    .s5{ grid-column: 4; grid-row: 3; } /* игрок 5 (право) */
-
-    /* BOTTOM 2 */
-    .s6{ grid-column: 2; grid-row: 4; } /* игрок 6 (низ) */
-    .s1{ grid-column: 3; grid-row: 4; } /* игрок 1 (низ) */
-
-    /* LEFT 2 */
-    .s8{ grid-column: 1; grid-row: 2; } /* игрок 8 (лево) */
-    .s4{ grid-column: 1; grid-row: 3; } /* игрок 4 (лево) */
-
-    /* пустой центр */
+    /* центр пустой */
     .centerEmpty{
       grid-column: 2 / 4;
       grid-row: 2 / 4;
@@ -143,7 +145,25 @@
       background: rgba(255,255,255,.02);
     }
 
-    /* player card */
+    .slot{ display:none; min-height:0; }
+
+    /* TOP */
+    .slot8{ grid-column: 1 / 3; grid-row: 1; } /* 8 top-left big */
+    .slot2{ grid-column: 3 / 5; grid-row: 1; } /* 2 top-right big */
+
+    /* LEFT vertical (2 rows high each) */
+    .slot4{ grid-column: 1; grid-row: 2 / 3; }
+    .slot5{ grid-column: 1; grid-row: 3 / 4; }
+
+    /* RIGHT vertical */
+    .slot3{ grid-column: 4; grid-row: 2 / 3; }
+    .slot6{ grid-column: 4; grid-row: 3 / 4; }
+
+    /* BOTTOM */
+    .slot7{ grid-column: 1 / 3; grid-row: 4; } /* 7 bottom-left big */
+    .slot1{ grid-column: 3 / 5; grid-row: 4; } /* 1 bottom-right big */
+
+    /* card */
     .player{
       width:100%;
       height:100%;
@@ -184,7 +204,7 @@
       text-align:center;
     }
     .name{
-      font-size: clamp(11px, 2.0vw, 13px);
+      font-size: clamp(11px, 2.0vw, 14px);
       font-weight: 950;
       text-transform: uppercase;
       letter-spacing:.25px;
@@ -195,7 +215,7 @@
     }
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(22px, 5.0vw, 40px);
+      font-size: clamp(22px, 5.2vw, 44px);
       font-weight: 950;
       letter-spacing:.6px;
       line-height:1;
@@ -211,12 +231,11 @@
       max-width: 92%;
     }
 
-    /* поворот к центру */
-    .rot180 .inner{ transform: rotate(180deg); } /* верхние смотрят вниз */
-    .rot90  .inner{ transform: rotate(90deg); }  /* левый столбец смотрит вправо */
-    .rot270 .inner{ transform: rotate(270deg); } /* правый столбец смотрит влево */
+    .rot180 .inner{ transform: rotate(180deg); }
+    .rot90  .inner{ transform: rotate(90deg); }
+    .rot270 .inner{ transform: rotate(270deg); }
 
-    /* active + dim others */
+    /* active + dim */
     .ring.hasActive .player{ filter: brightness(.62) saturate(.7); }
     .ring.hasActive .player::after{
       content:"";
@@ -240,7 +259,7 @@
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
-    /* bottom sticky (кнопки всегда доступны) */
+    /* bottom sticky */
     .bottom{
       padding: 10px 12px 12px;
       border-top: 1px solid rgba(255,255,255,.06);
@@ -287,7 +306,7 @@
       background: rgba(255,255,255,.06);
     }
 
-    /* Settings sheet: скролл только внутри */
+    /* Settings sheet: scroll inside */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -314,7 +333,7 @@
     .sheet.open{ transform: translateY(0); }
     .sheetCard{
       border-radius: 20px;
-      border:1px solid var(--border);
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(10,14,28,.92);
       box-shadow: 0 14px 36px rgba(0,0,0,.45);
       backdrop-filter: blur(10px);
@@ -380,17 +399,17 @@
       <div class="ring" id="ring">
         <div class="centerEmpty"></div>
 
-        <div class="slot s2" id="slot2"></div>
-        <div class="slot s7" id="slot7"></div>
+        <div class="slot slot8" id="slot8"></div>
+        <div class="slot slot2" id="slot2"></div>
 
-        <div class="slot s3" id="slot3"></div>
-        <div class="slot s5" id="slot5"></div>
+        <div class="slot slot4" id="slot4"></div>
+        <div class="slot slot5" id="slot5"></div>
 
-        <div class="slot s6" id="slot6"></div>
-        <div class="slot s1" id="slot1"></div>
+        <div class="slot slot3" id="slot3"></div>
+        <div class="slot slot6" id="slot6"></div>
 
-        <div class="slot s8" id="slot8"></div>
-        <div class="slot s4" id="slot4"></div>
+        <div class="slot slot7" id="slot7"></div>
+        <div class="slot slot1" id="slot1"></div>
       </div>
     </div>
 
@@ -472,8 +491,7 @@
       { bg1:"#FDE047", bg2:"#F59E0B" }, // 8
     ];
 
-    // DOM
-    const ringEl = document.getElementById("ring");
+    const ring = document.getElementById("ring");
     const hintTop = document.getElementById("hintTop");
     const statusEl = document.getElementById("status");
 
@@ -512,7 +530,7 @@
       for (let i=0;i<=max;i++){
         const opt = document.createElement("option");
         opt.value = i;
-        opt.textContent = String(i).padStart(2,"0");
+        opt.textContent = pad2(i);
         select.appendChild(opt);
       }
     }
@@ -545,7 +563,6 @@
       ss.value = String(total%60);
     }
 
-    // порядок по кругу: 1->2->3->4->5->6->7->8->1
     function nextAliveAfter(i){
       for (let step=1; step<=state.n; step++){
         const cand = (i + step) % state.n;
@@ -650,29 +667,20 @@
       return card;
     }
 
-    // Расстановка по кругу (слоты):
-    // 1: низ (bottom-right слот у нас) — норм
-    // 2: верх (rot180)
-    // 3: справа (rot270)
-    // 4: слева (rot90)
-    // 5: справа ниже (rot270)
-    // 6: низ слева — норм
-    // 7: верх справа (rot180)
-    // 8: верх слева (rot90) — но у нас слот 8 слева, поэтому rot90
+    // ФИКС позиции по номеру игрока (как на твоих схемах)
     function rotationForPlayer(p){
-      if (p === 2 || p === 7) return "rot180";
-      if (p === 3 || p === 5) return "rot270";
-      if (p === 4 || p === 8) return "rot90";
-      return "";
+      if (p === 2 || p === 8) return "rot180"; // верх
+      if (p === 3 || p === 6) return "rot270"; // справа
+      if (p === 4 || p === 5) return "rot90";  // слева
+      return ""; // низ
     }
 
     function clearSlots(){
       for (let p=1;p<=8;p++){
-        const s = slots[p];
-        s.style.display = "none";
-        s.innerHTML = "";
+        slots[p].style.display = "none";
+        slots[p].innerHTML = "";
       }
-      ringEl.classList.remove("hasActive");
+      ring.classList.remove("hasActive");
     }
 
     function buildLayout(){
@@ -690,9 +698,9 @@
     }
 
     function renderAll(){
-      const cards = [...ringEl.querySelectorAll(".player")];
+      const cards = [...ring.querySelectorAll(".player")];
       const hasActive = state.running && !state.paused && state.active >= 0;
-      ringEl.classList.toggle("hasActive", hasActive);
+      ring.classList.toggle("hasActive", hasActive);
 
       cards.forEach(el => {
         const i = parseInt(el.dataset.i, 10);
@@ -722,6 +730,7 @@
       updateSettingsLock();
     }
 
+    // режим: нажал игрок i -> начинает идти время у (i+1) по кругу
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
@@ -748,7 +757,7 @@
       state.active = -1;
 
       state.started = true;
-      state.running = false; // старт не запускает тик
+      state.running = false;
       state.paused = true;
       state.lastTs = 0;
 
