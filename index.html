@@ -13,11 +13,10 @@
       --shadow: 0 14px 36px rgba(0,0,0,.45);
       --r: 18px;
 
+      --topH: 66px;
+      --bottomH: 96px;
       --pad: 12px;
       --gap: 10px;
-
-      --topH: 64px;
-      --bottomH: 90px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -33,12 +32,11 @@
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
 
-      /* Игровой экран без прокрутки */
+      /* игра без скролла */
       overflow:hidden;
       touch-action: pan-y;
     }
 
-    /* Игра — fixed и без скролла */
     .screen{
       position:fixed;
       inset:0;
@@ -95,52 +93,26 @@
       padding: var(--pad);
       min-height:0;
       display:grid;
-      place-items:stretch;
     }
 
-    /* 4x4 кольцо: по 2 сверху/снизу/слева/справа, центр пустой */
-    .ring{
+    /* 2 колонки, строки = ceil(n/2) */
+    .grid{
       width:100%;
       height:100%;
       display:grid;
+      grid-template-columns: 1fr 1fr;
       gap: var(--gap);
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr 1fr;
       min-height:0;
+      align-content: stretch;
     }
 
-    /* слоты (всего 8) */
-    .slot{ display:none; min-height:0; }
+    .grid.n2{ grid-template-rows: 1fr; }
+    .grid.n3,.grid.n4{ grid-template-rows: 1fr 1fr; }
+    .grid.n5,.grid.n6{ grid-template-rows: 1fr 1fr 1fr; }
+    .grid.n7,.grid.n8{ grid-template-rows: 1fr 1fr 1fr 1fr; }
 
-    /* TOP (2) */
-    .p2{ grid-column:2; grid-row:1; } /* Player 2 (верх, перевёрнут) */
-    .p7{ grid-column:3; grid-row:1; } /* Player 7 (верх, перевёрнут) */
-
-    /* RIGHT (2) */
-    .p3{ grid-column:4; grid-row:2; } /* Player 3 (право, вертикально) */
-    .p5{ grid-column:4; grid-row:3; } /* Player 5 (право, вертикально) */
-
-    /* BOTTOM (2) */
-    .p6{ grid-column:2; grid-row:4; } /* Player 6 (низ) */
-    .p1{ grid-column:3; grid-row:4; } /* Player 1 (низ) */
-
-    /* LEFT (2) */
-    .p8{ grid-column:1; grid-row:2; } /* Player 8 (лево, вертикально) */
-    .p4{ grid-column:1; grid-row:3; } /* Player 4 (лево, вертикально) */
-
-    /* center empty */
-    .centerEmpty{
-      grid-column:2 / 4;
-      grid-row:2 / 4;
-      border-radius: 24px;
-      border:1px dashed rgba(255,255,255,.10);
-      background: rgba(255,255,255,.02);
-    }
-
-    /* player card */
+    /* card */
     .player{
-      width:100%;
-      height:100%;
       border-radius: var(--r);
       border:1px solid rgba(255,255,255,.14);
       box-shadow: var(--shadow);
@@ -148,10 +120,10 @@
       cursor:pointer;
       user-select:none;
       position:relative;
+      min-height:0;
       display:grid;
       place-items:center;
       transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
-      min-height:0;
     }
     .player::before{
       content:"";
@@ -174,11 +146,11 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:7px;
+      gap:6px;
       text-align:center;
     }
     .name{
-      font-size: clamp(11px, 2.2vw, 13px);
+      font-size: clamp(11px, 2.0vw, 13px);
       font-weight: 950;
       text-transform: uppercase;
       letter-spacing:.25px;
@@ -189,11 +161,11 @@
     }
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(20px, 4.6vw, 34px);
+      font-size: clamp(24px, 6.0vw, 46px);
       font-weight: 950;
       letter-spacing:.6px;
-      white-space:nowrap;
       line-height:1;
+      white-space:nowrap;
     }
     .sub{
       font-size: clamp(10px, 2.0vw, 12px);
@@ -205,27 +177,27 @@
       max-width: 92%;
     }
 
-    /* rotations so they “look” to center */
+    /* ориентация “вокруг центра” */
     .rot180 .inner{ transform: rotate(180deg); }
     .rot90  .inner{ transform: rotate(90deg); }
     .rot270 .inner{ transform: rotate(270deg); }
 
-    /* active highlight + dim others */
-    .ring.hasActive .player{ filter: brightness(.62) saturate(.7); }
-    .ring.hasActive .player::after{
+    /* active + dim others */
+    .grid.hasActive .player{ filter: brightness(.62) saturate(.7); }
+    .grid.hasActive .player::after{
       content:"";
       position:absolute;
       inset:0;
       background: rgba(0,0,0,.35);
       pointer-events:none;
     }
-    .ring.hasActive .player.active{
+    .grid.hasActive .player.active{
       filter:none;
       outline: 5px solid rgba(255,255,255,.78);
       outline-offset: -5px;
       transform: translateY(-1px);
     }
-    .ring.hasActive .player.active::after{ background: rgba(0,0,0,0); }
+    .grid.hasActive .player.active::after{ background: rgba(0,0,0,0); }
 
     .player.lost{
       opacity:.78;
@@ -277,7 +249,7 @@
       background: rgba(255,255,255,.06);
     }
 
-    /* Settings sheet: скролл только внутри настроек */
+    /* Settings sheet */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -326,7 +298,7 @@
     .sheetClose{ min-width: 96px; }
     .sheetBody{
       padding: 12px;
-      overflow:auto; /* <-- скролл только тут */
+      overflow:auto;
       -webkit-overflow-scrolling: touch;
     }
     .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
@@ -367,23 +339,7 @@
     </div>
 
     <div class="arena">
-      <div class="ring" id="ring">
-        <!-- пустой центр -->
-        <div class="centerEmpty"></div>
-
-        <!-- СЛОТЫ (фиксированные 8 мест по краям) -->
-        <div class="slot p2" id="slot2"></div>
-        <div class="slot p7" id="slot7"></div>
-
-        <div class="slot p3" id="slot3"></div>
-        <div class="slot p5" id="slot5"></div>
-
-        <div class="slot p6" id="slot6"></div>
-        <div class="slot p1" id="slot1"></div>
-
-        <div class="slot p8" id="slot8"></div>
-        <div class="slot p4" id="slot4"></div>
-      </div>
+      <div class="grid n2" id="grid"></div>
     </div>
 
     <div class="bottom">
@@ -454,18 +410,18 @@
     };
 
     const COLORS = [
-      { bg1:"#6D5CFF", bg2:"#4A33FF" }, // 1
-      { bg1:"#2FE07B", bg2:"#16B85E" }, // 2
-      { bg1:"#00C2FF", bg2:"#007CFF" }, // 3
-      { bg1:"#FFB020", bg2:"#FF7A00" }, // 4
-      { bg1:"#FF5C7A", bg2:"#E52B54" }, // 5
-      { bg1:"#A855F7", bg2:"#6D28D9" }, // 6
-      { bg1:"#22D3EE", bg2:"#0891B2" }, // 7
-      { bg1:"#FDE047", bg2:"#F59E0B" }, // 8
+      { bg1:"#6D5CFF", bg2:"#4A33FF" },
+      { bg1:"#2FE07B", bg2:"#16B85E" },
+      { bg1:"#00C2FF", bg2:"#007CFF" },
+      { bg1:"#FFB020", bg2:"#FF7A00" },
+      { bg1:"#FF5C7A", bg2:"#E52B54" },
+      { bg1:"#A855F7", bg2:"#6D28D9" },
+      { bg1:"#22D3EE", bg2:"#0891B2" },
+      { bg1:"#FDE047", bg2:"#F59E0B" },
     ];
 
     // DOM
-    const ringEl = document.getElementById("ring");
+    const grid = document.getElementById("grid");
     const hintTop = document.getElementById("hintTop");
     const statusEl = document.getElementById("status");
 
@@ -487,17 +443,6 @@
     const playersCount = document.getElementById("playersCount");
     const namesBox = document.getElementById("namesBox");
     const settingsNote = document.getElementById("settingsNote");
-
-    const slots = {
-      1: document.getElementById("slot1"),
-      2: document.getElementById("slot2"),
-      3: document.getElementById("slot3"),
-      4: document.getElementById("slot4"),
-      5: document.getElementById("slot5"),
-      6: document.getElementById("slot6"),
-      7: document.getElementById("slot7"),
-      8: document.getElementById("slot8"),
-    };
 
     function fillSelect(select, max){
       select.innerHTML = "";
@@ -523,6 +468,13 @@
       lastTs: 0,
       finished: new Set(),
     };
+
+    function gridClassForN(n){
+      if (n === 2) return "n2";
+      if (n === 3 || n === 4) return "n3";
+      if (n === 5 || n === 6) return "n5";
+      return "n7";
+    }
 
     function getPickedMs(){
       const m = parseInt(mm.value, 10);
@@ -607,6 +559,20 @@
       }
     }
 
+    // Ориентация “к центру”:
+    // - верхний ряд: rot180
+    // - средние ряды: левый rot90, правый rot270
+    // - нижний ряд: normal
+    function classesForCell(i, n){
+      const rows = Math.ceil(n / 2);
+      const row = Math.floor(i / 2);
+      const col = i % 2;
+
+      if (row === 0) return "rot180";
+      if (row > 0 && row < rows - 1) return col === 0 ? "rot90" : "rot270";
+      return "";
+    }
+
     function makeCard(i){
       const c = COLORS[i % COLORS.length];
       const card = document.createElement("div");
@@ -641,52 +607,23 @@
       return card;
     }
 
-    // Расстановка по краям (фикс. места). Добавление идёт 1..8.
-    // 1: bottom-right (у нас p1 внизу справа) — норм
-    // 2: top-left-of-center (p2 сверху слева из двух) — rot180
-    // 3: right-top — rot270
-    // 4: left-bottom — rot90
-    // 5: right-bottom — rot270
-    // 6: bottom-left — норм
-    // 7: top-right — rot180
-    // 8: left-top — rot90
-    //
-    // Если у тебя другой порядок (например 4 и 8 местами) — скажи, поменяю.
-    function rotationClassForPlayerNumber(p){
-      if (p === 2 || p === 7) return "rot180";
-      if (p === 3 || p === 5) return "rot270";
-      if (p === 4 || p === 8) return "rot90";
-      return "";
-    }
-
-    function clearSlots(){
-      for (let p=1;p<=8;p++){
-        const s = slots[p];
-        s.style.display = "none";
-        s.innerHTML = "";
-      }
-      ringEl.classList.remove("hasActive");
-    }
-
     function buildLayout(){
-      clearSlots();
-      for (let p=1; p<=state.n; p++){
-        const i = p - 1;
-        const slot = slots[p];
-        const card = makeCard(i);
-        const rot = rotationClassForPlayerNumber(p);
-        if (rot) card.classList.add(rot);
+      grid.innerHTML = "";
+      grid.className = `grid ${gridClassForN(state.n)}`;
 
-        slot.style.display = "block";
-        slot.appendChild(card);
+      for (let i=0;i<state.n;i++){
+        const card = makeCard(i);
+        const extra = classesForCell(i, state.n);
+        if (extra) card.classList.add(extra);
+        grid.appendChild(card);
       }
       renderAll();
     }
 
     function renderAll(){
-      const cards = [...ringEl.querySelectorAll(".player")];
+      const cards = [...grid.querySelectorAll(".player")];
       const hasActive = state.running && !state.paused && state.active >= 0;
-      ringEl.classList.toggle("hasActive", hasActive);
+      grid.classList.toggle("hasActive", hasActive);
 
       cards.forEach(el => {
         const i = parseInt(el.dataset.i, 10);
@@ -866,7 +803,7 @@
     minusBtn.addEventListener("click", removePlayer);
     playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
 
-    // init defaults
+    // init
     setPicked(30_000);
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
