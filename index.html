@@ -1,175 +1,803 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Мечеть — сайт общины</title>
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/assets/css/base.css">
-  <link rel="stylesheet" href="/assets/css/layout.css">
-  <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/themes.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Словесные часы</title>
+  <style>
+    :root{
+      --bg:#070A14;
+      --text:#F3F6FF;
+      --muted:rgba(243,246,255,.72);
+      --border:rgba(255,255,255,.12);
+      --shadow: 0 14px 36px rgba(0,0,0,.45);
+      --r: 18px;
+      --topH: 76px;
+      --bottomH: 102px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(800px 600px at 20% 10%, rgba(124,92,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.12), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      overflow:hidden;
+      -webkit-tap-highlight-color: transparent;
+      font-weight: 900;
+    }
+
+    .screen{
+      position:fixed;
+      inset:0;
+      display:grid;
+      grid-template-rows: var(--topH) 1fr var(--bottomH);
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+    }
+
+    /* top */
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      min-width:0;
+    }
+    .topLeft{min-width:0; display:flex; flex-direction:column; gap:6px;}
+    .title{
+      font-size:14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      letter-spacing:.2px;
+    }
+    .turnLine{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      min-width:0;
+    }
+    .turnPill{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size:12px;
+      font-weight: 950;
+      white-space:nowrap;
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+      flex:0 0 auto;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      font-weight: 900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+    }
+
+    /* arena */
+    .arena{ padding: 10px 12px; min-height:0; }
+    .grid{
+      height:100%;
+      width:100%;
+      display:grid;
+      gap:10px;
+      min-height:0;
+    }
+    .grid.n2{ grid-template-rows:1fr 1fr; grid-template-columns:1fr; --timeVw: 9.6vw;}
+    .grid.n3,.grid.n4{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; --timeVw: 7.2vw;}
+    .grid.n5,.grid.n6{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr; --timeVw: 6.1vw;}
+    .grid.n7,.grid.n8{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr 1fr; --timeVw: 5.6vw;}
+
+    .player{
+      border-radius: var(--r);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      min-height:0;
+      display:grid;
+      place-items:center;
+      transition: filter .15s ease, transform .15s ease, outline-color .15s ease;
+    }
+    .player::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(140px 140px at 20% 15%, rgba(255,255,255,.28), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,0));
+      mix-blend-mode: overlay;
+      opacity:.60;
+      pointer-events:none;
+    }
+    .inner{
+      position:relative;
+      padding: 10px;
+      width:100%;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+    .name{
+      font-size:12px;
+      letter-spacing:.35px;
+      text-transform:uppercase;
+      opacity:.96;
+      font-weight: 950;
+    }
+    .time{
+      font-variant-numeric: tabular-nums;
+      font-weight: 950;
+      letter-spacing:.6px;
+      line-height:1;
+      font-size: clamp(26px, var(--timeVw, 7vw), 66px);
+    }
+    .sub{
+      font-size:12px;
+      font-weight: 950;
+      opacity:.92;
+    }
+    .player.active{
+      outline: 4px solid rgba(255,255,255,.55);
+      outline-offset: -4px;
+      filter: saturate(1.18) brightness(1.06);
+      transform: translateY(-1px);
+    }
+    .player.lost{
+      opacity:.80;
+      cursor:not-allowed;
+      filter: grayscale(.1);
+    }
+    .flip .inner{ transform: rotate(180deg); }
+
+    /* bottom controls */
+    .bottom{
+      padding: 8px 12px 12px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      background: rgba(5,7,16,.40);
+      backdrop-filter: blur(8px);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .btnRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      padding:11px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight: 950;
+      line-height:1;
+      white-space:nowrap;
+      min-width: 108px;
+      text-align:center;
+    }
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(124,92,255,1), rgba(124,92,255,.72));
+      border-color: rgba(124,92,255,.55);
+    }
+    .btn.danger{
+      background: rgba(255,92,122,.14);
+      border-color: rgba(255,92,122,.40);
+    }
+    .btn.ghost{
+      min-width: 132px;
+      background: rgba(255,255,255,.06);
+    }
+    .pill{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size:12px;
+      font-weight: 950;
+      white-space:nowrap;
+    }
+
+    /* Settings drawer */
+    .sheetOverlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.45);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+    }
+    .sheetOverlay.open{ opacity:1; pointer-events:auto; }
+
+    .sheet{
+      position:fixed;
+      left:0; right:0;
+      bottom:0;
+      transform: translateY(105%);
+      transition: transform .22s ease;
+      padding:
+        12px
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+    }
+    .sheet.open{ transform: translateY(0); }
+
+    .sheetCard{
+      border-radius: 20px;
+      border:1px solid var(--border);
+      background: rgba(10,14,28,.92);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      backdrop-filter: blur(10px);
+      max-height: min(72vh, 560px);
+      overflow:auto;
+    }
+    .sheetHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      position: sticky;
+      top: 0;
+      background: rgba(10,14,28,.92);
+      padding-bottom: 10px;
+      z-index: 2;
+    }
+    .sheetTitle{ font-size:14px; font-weight: 950; letter-spacing:.2px; }
+    .sheetClose{ min-width: 96px; }
+
+    .sheetGrid{ display:grid; gap:12px; }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .label{ font-size:12px; font-weight: 950; color: var(--muted); }
+    select, input[type="range"], input[type="text"]{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 10px;
+      font-weight: 950;
+      outline:none;
+    }
+    .timePick{display:flex; gap:8px; align-items:center}
+    .counter{display:flex; gap:8px; align-items:center}
+    .miniBtn{ min-width: 44px; padding: 10px 0; }
+
+    .names{
+      display:grid;
+      gap:10px;
+    }
+    .nameRow{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:6px;
+      padding: 10px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .note{
+      color: var(--muted);
+      font-size:12px;
+      font-weight: 900;
+      line-height:1.3;
+    }
+  </style>
 </head>
 <body>
-  <header class="header">
-    <div class="container">
-      <div class="nav">
-        <a class="brand" href="/index.html">
-          <div class="brand__logo" aria-hidden="true"></div>
-          <div>
-            <div class="brand__name">Мечеть</div>
-            <span class="brand__sub">Вопросы • Опросы • Садака</span>
-          </div>
-        </a>
-
-        <nav class="nav__links" aria-label="Навигация">
-          <a href="/questions.html">Вопрос Имаму</a>
-          <a href="/polls.html">Опросы</a>
-          <a href="/donations.html">Садака</a>
-          <a href="/sermons.html">Проповеди</a>
-          <a href="/schedule.html">Расписание</a>
-          <a href="/contacts.html">Контакты</a>
-          <a href="/admin/index.html">Админ</a>
-        </nav>
-
-        <button class="btn btn--ghost" data-nav-toggle>Меню</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="main">
-    <div class="container">
-      <section class="hero">
-        <h1>Сайт общины</h1>
-        <p>
-          Здесь можно анонимно оставить вопрос для Имама (с возможностью указать номер для связи),
-          проголосовать за тему пятничной проповеди, посмотреть отчёты по сбору садака и расписание намаза.
-        </p>
-        <div class="hero__cta">
-          <a class="btn btn--primary" href="/questions.html">Задать вопрос</a>
-          <a class="btn" href="/polls.html">Голосовать за тему</a>
-          <a class="btn" href="/donations.html">Сборы и отчёты</a>
+  <div class="screen">
+    <div class="top">
+      <div class="topLeft">
+        <div class="title">Словесные часы</div>
+        <div class="turnLine">
+          <div class="turnPill" id="turnTop">Ход: —</div>
+          <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока (время пойдёт у следующего)</div>
         </div>
-      </section>
+      </div>
+      <div class="turnPill" id="status">Готово</div>
+    </div>
 
-      <div class="hr"></div>
+    <div class="arena">
+      <div class="grid n2" id="grid"></div>
+    </div>
 
-      <div class="grid">
-        <section class="card">
-          <div class="section-title">
-            <h2>Актуальный опрос</h2>
-            <a class="badge" href="/polls.html">Все опросы →</a>
-          </div>
-          <div id="homePoll"></div>
-        </section>
-
-        <aside class="card card--subtle">
-          <h3>Быстрые действия</h3>
-          <div class="list">
-            <a class="item" href="/schedule.html">
-              <div class="item__top">
-                <div class="item__title">Расписание намаза</div>
-                <div class="item__meta">Фото на месяц</div>
-              </div>
-            </a>
-            <a class="item" href="/sermons.html">
-              <div class="item__top">
-                <div class="item__title">Проповеди</div>
-                <div class="item__meta">Аудио/видео</div>
-              </div>
-            </a>
-            <a class="item" href="/admin/index.html">
-              <div class="item__top">
-                <div class="item__title">Админка (прототип)</div>
-                <div class="item__meta">PIN: <kbd>1234</kbd></div>
-              </div>
-            </a>
-          </div>
-
-          <div class="hr"></div>
-          <div class="notice notice--warn">
-            Это прототип на <b>localStorage</b>: данные сохраняются только в вашем браузере.
-            Для настоящего сайта понадобится сервер/CMS (например WordPress).
-          </div>
-        </aside>
+    <div class="bottom">
+      <div class="btnRow">
+        <button class="btn primary" id="startBtn">Старт</button>
+        <button class="btn" id="pauseBtn" disabled>Пауза</button>
+        <button class="btn" id="resumeBtn" disabled>Продолжить</button>
+        <button class="btn danger" id="resetBtn">Сброс</button>
+      </div>
+      <div class="btnRow">
+        <div class="pill" id="turnBottom">Ход: —</div>
+        <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
       </div>
     </div>
-  </main>
+  </div>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="small">© Прототип. Раздел “Админ” — демонстрация интерфейса.</div>
+  <!-- Settings sheet -->
+  <div class="sheetOverlay" id="overlay"></div>
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheetCard">
+      <div class="sheetHead">
+        <div class="sheetTitle">Настройки</div>
+        <button class="btn sheetClose" id="closeSettingsBtn">Закрыть</button>
+      </div>
+
+      <div class="sheetGrid">
+        <div class="row">
+          <div class="label">Время на игрока</div>
+          <div class="timePick">
+            <select id="mm"></select>
+            <div class="label">:</div>
+            <select id="ss"></select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="label">Игроков</div>
+          <div class="counter">
+            <button class="btn miniBtn" id="minusBtn">−</button>
+            <div class="pill"><b id="playersCount">2</b></div>
+            <button class="btn miniBtn" id="plusBtn">+</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
+        </div>
+
+        <div class="label">Имена игроков</div>
+        <div class="names" id="namesBox"></div>
+
+        <div class="note" id="settingsNote">
+          Пока раунд не начат, можно менять время, игроков и имена. Во время раунда настройки заблокированы — нажми «Сброс».
+        </div>
+      </div>
     </div>
-  </footer>
+  </div>
 
-  <script type="module">
-    import "./assets/js/app.js";
-    import "./assets/js/mock-api/seed.js";
-    import { KEYS, load, save } from "./assets/js/storage.js";
-    import { setHTML, escapeHTML } from "./assets/js/ui.js";
+  <script>
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const msToText = (ms) => {
+      ms = Math.max(0, ms);
+      const total = Math.ceil(ms / 1000);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${pad2(m)}:${pad2(s)}`;
+    };
 
-    const root = document.getElementById("homePoll");
-    const polls = load(KEYS.polls, []);
-    const votes = load(KEYS.votes, {});
-    const active = polls.find(p => p.status === "active");
+    const COLORS = [
+      { bg1:"#6D5CFF", bg2:"#4A33FF" },
+      { bg1:"#2FE07B", bg2:"#16B85E" },
+      { bg1:"#00C2FF", bg2:"#007CFF" },
+      { bg1:"#FFB020", bg2:"#FF7A00" },
+      { bg1:"#FF5C7A", bg2:"#E52B54" },
+      { bg1:"#A855F7", bg2:"#6D28D9" },
+      { bg1:"#22D3EE", bg2:"#0891B2" },
+      { bg1:"#FDE047", bg2:"#F59E0B" },
+    ];
 
-    if(!active){
-      setHTML(root, `<div class="notice">Нет активного опроса.</div>`);
-    }else{
-      const pollId = active.id;
-      const votedOpt = votes[pollId];
+    // DOM
+    const grid = document.getElementById("grid");
+    const hintTop = document.getElementById("hintTop");
+    const statusEl = document.getElementById("status");
+    const turnTop = document.getElementById("turnTop");
+    const turnBottom = document.getElementById("turnBottom");
 
-      const counts = {};
-      for(const opt of active.options) counts[opt.id] = 0;
-      for(const [k,v] of Object.entries(votes)){
-        if(k === pollId && v && counts[v] !== undefined) counts[v] += 1;
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const settingsBtn = document.getElementById("settingsBtn");
+    const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+    const overlay = document.getElementById("overlay");
+    const sheet = document.getElementById("sheet");
+
+    const mm = document.getElementById("mm");
+    const ss = document.getElementById("ss");
+    const minusBtn = document.getElementById("minusBtn");
+    const plusBtn = document.getElementById("plusBtn");
+    const playersRange = document.getElementById("playersRange");
+    const playersCount = document.getElementById("playersCount");
+    const namesBox = document.getElementById("namesBox");
+    const settingsNote = document.getElementById("settingsNote");
+
+    function fillSelect(select, max){
+      select.innerHTML = "";
+      for (let i=0;i<=max;i++){
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = pad2(i);
+        select.appendChild(opt);
       }
-      const total = Object.values(counts).reduce((a,b)=>a+b,0);
-
-      setHTML(root, `
-        <div class="item">
-          <div class="item__top">
-            <div>
-              <div class="item__title">${escapeHTML(active.title)}</div>
-              <div class="item__meta">Голосование: 1 вариант • результаты сразу</div>
-            </div>
-            <span class="pill">${total} голос(ов)</span>
-          </div>
-          <div class="hr"></div>
-          <div class="list">
-            ${active.options.map(opt=>{
-              const c = counts[opt.id] || 0;
-              const pct = total ? Math.round((c/total)*100) : 0;
-              const disabled = votedOpt ? "disabled" : "";
-              const mine = votedOpt === opt.id ? " (ваш выбор)" : "";
-              return `
-                <div class="item">
-                  <div class="item__top">
-                    <div>
-                      <div class="item__title">${escapeHTML(opt.text)}<span class="small">${mine}</span></div>
-                      <div class="progress" aria-label="прогресс"><div class="progress__bar" style="width:${pct}%"></div></div>
-                      <div class="item__meta">${c} • ${pct}%</div>
-                    </div>
-                    <button class="btn btn--primary" data-vote="${opt.id}" ${disabled}>Голосовать</button>
-                  </div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `);
-
-      root.addEventListener("click", (e)=>{
-        const btn = e.target.closest("[data-vote]");
-        if(!btn) return;
-        if(votes[pollId]) return;
-
-        const optId = btn.getAttribute("data-vote");
-        votes[pollId] = optId;
-        save(KEYS.votes, votes);
-        location.reload();
-      });
     }
+    fillSelect(mm, 59);
+    fillSelect(ss, 59);
+
+    const state = {
+      n: 2,
+      baseMs: 30_000,
+      times: [],
+      names: ["Игрок 1", "Игрок 2"],
+
+      active: -1,        // кто сейчас тратит время (-1 = никто)
+      started: false,    // нажали Старт (раунд подготовлен)
+      running: false,    // реально тикает после первого клика по игроку
+      paused: true,
+      lastTs: 0,
+      finished: new Set(),
+    };
+
+    function gridClassForN(n){
+      if (n === 2) return "n2";
+      if (n === 3 || n === 4) return "n3";
+      if (n === 5 || n === 6) return "n5";
+      return "n7";
+    }
+
+    function getPickedMs(){
+      const m = parseInt(mm.value, 10);
+      const s = parseInt(ss.value, 10);
+      let ms = (m*60 + s) * 1000;
+      if (ms <= 0) ms = 30_000;
+      return ms;
+    }
+    function setPicked(ms){
+      const total = Math.round(ms / 1000);
+      mm.value = String(Math.floor(total/60));
+      ss.value = String(total%60);
+    }
+
+    function currentTurnName(){
+      if (!state.running || state.paused || state.active < 0) return "—";
+      return state.names[state.active] || `Игрок ${state.active+1}`;
+    }
+
+    function setStatusText(){
+      if (!state.started){
+        statusEl.textContent = "Готово";
+        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока (время пойдёт у следующего)";
+      } else if (!state.running){
+        statusEl.textContent = "Ожидание";
+        hintTop.textContent = "Нажми игрока X → сразу начнёт уменьшаться таймер игрока X+1 (по кругу)";
+      } else if (state.paused){
+        statusEl.textContent = "Пауза";
+        hintTop.textContent = "Пауза";
+      } else {
+        statusEl.textContent = "Идёт";
+        hintTop.textContent = "Нажми любого игрока → ход к следующему и его время уменьшается";
+      }
+
+      const turn = currentTurnName();
+      turnTop.textContent = `Ход: ${turn}`;
+      turnBottom.textContent = `Ход: ${turn}`;
+    }
+
+    function updateButtons(){
+      startBtn.disabled = state.started;
+      pauseBtn.disabled = !state.running || state.paused;
+      resumeBtn.disabled = !state.running || !state.paused;
+    }
+
+    function updateSettingsLock(){
+      const locked = state.started;
+      mm.disabled = locked;
+      ss.disabled = locked;
+      minusBtn.disabled = locked;
+      plusBtn.disabled = locked;
+      playersRange.disabled = locked;
+      [...namesBox.querySelectorAll("input")].forEach(inp => inp.disabled = locked);
+
+      settingsNote.textContent = locked
+        ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
+        : "Можно менять время, игроков и имена. Нажми «Старт», затем нажми любого игрока.";
+    }
+
+    function buildNamesEditor(){
+      namesBox.innerHTML = "";
+      for (let i=0;i<state.n;i++){
+        const row = document.createElement("div");
+        row.className = "nameRow";
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = `Игрок ${i+1}`;
+
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.placeholder = `Имя игрока ${i+1}`;
+        inp.value = state.names[i] ?? `Игрок ${i+1}`;
+        inp.addEventListener("input", () => {
+          state.names[i] = inp.value.trim() || `Игрок ${i+1}`;
+          // обновим подписи на карточках и "Ход:"
+          const nameEl = document.getElementById(`n-${i}`);
+          if (nameEl) nameEl.textContent = state.names[i];
+          setStatusText();
+        });
+
+        row.appendChild(label);
+        row.appendChild(inp);
+        namesBox.appendChild(row);
+      }
+    }
+
+    function buildPlayers(){
+      grid.innerHTML = "";
+      grid.className = `grid ${gridClassForN(state.n)}`;
+
+      for (let i=0;i<state.n;i++){
+        const c = COLORS[i % COLORS.length];
+
+        const card = document.createElement("div");
+        card.className = "player";
+        card.dataset.i = String(i);
+        card.style.background = `linear-gradient(180deg, ${c.bg1}, ${c.bg2})`;
+
+        if (state.n === 2 && i === 0) card.classList.add("flip");
+
+        const inner = document.createElement("div");
+        inner.className = "inner";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.id = `n-${i}`;
+        name.textContent = state.names[i] ?? `Игрок ${i+1}`;
+
+        const time = document.createElement("div");
+        time.className = "time";
+        time.id = `t-${i}`;
+        time.textContent = msToText(state.times[i] ?? state.baseMs);
+
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        sub.id = `s-${i}`;
+        sub.textContent = "Нажми";
+
+        inner.appendChild(name);
+        inner.appendChild(time);
+        inner.appendChild(sub);
+        card.appendChild(inner);
+
+        card.addEventListener("click", () => onTap(i));
+        grid.appendChild(card);
+      }
+
+      renderAll();
+    }
+
+    function renderAll(){
+      const cards = [...grid.querySelectorAll(".player")];
+      cards.forEach(el => {
+        const i = parseInt(el.dataset.i, 10);
+        el.classList.toggle("active", state.running && !state.paused && i === state.active);
+        el.classList.toggle("lost", state.finished.has(i));
+      });
+
+      for (let i=0;i<state.n;i++){
+        const tEl = document.getElementById(`t-${i}`);
+        if (tEl) tEl.textContent = msToText(state.times[i]);
+
+        const sEl = document.getElementById(`s-${i}`);
+        if (!sEl) continue;
+
+        if (state.finished.has(i)) sEl.textContent = "Вышло";
+        else if (!state.started) sEl.textContent = "После Старт";
+        else if (!state.running) sEl.textContent = "Нажми → ход следующему";
+        else if (state.paused) sEl.textContent = "Пауза";
+        else sEl.textContent = (i === state.active) ? "Сейчас идёт" : "Нажми → ход следующему";
+      }
+
+      playersCount.textContent = String(state.n);
+      playersRange.value = String(state.n);
+
+      setStatusText();
+      updateButtons();
+      updateSettingsLock();
+    }
+
+    function nextAlive(from){
+      let j = from;
+      for (let step=0; step<state.n; step++){
+        j = (j + 1) % state.n;
+        if (!state.finished.has(j)) return j;
+      }
+      return from;
+    }
+
+    // правило: нажал игрок i -> активен i+1 и начинает тратить время
+    function onTap(i){
+      if (!state.started) return;
+      if (state.running && state.paused) return;
+      if (state.finished.size >= state.n) return;
+
+      const next = nextAlive(i);
+
+      if (!state.running){
+        state.running = true;
+        state.paused = false;
+        state.lastTs = performance.now();
+      }
+
+      state.active = next;
+      renderAll();
+    }
+
+    function start(){
+      if (state.started) return;
+
+      state.baseMs = getPickedMs();
+      state.times = Array.from({length: state.n}, () => state.baseMs);
+      state.finished = new Set();
+      state.active = -1;
+
+      state.started = true;
+      state.running = false; // не тикает до клика игрока
+      state.paused = true;
+      state.lastTs = 0;
+
+      renderAll();
+    }
+
+    function pause(){
+      if (!state.running) return;
+      state.paused = true;
+      renderAll();
+    }
+
+    function resume(){
+      if (!state.running) return;
+      state.paused = false;
+      state.lastTs = performance.now();
+      renderAll();
+    }
+
+    function resetAll(){
+      state.baseMs = getPickedMs();
+      state.times = Array.from({length: state.n}, () => state.baseMs);
+      state.finished = new Set();
+      state.active = -1;
+
+      state.started = false;
+      state.running = false;
+      state.paused = true;
+      state.lastTs = 0;
+
+      buildNamesEditor();
+      buildPlayers();
+      renderAll();
+    }
+
+    function setPlayersCount(n){
+      if (state.started) return;
+      state.n = Math.max(2, Math.min(8, n));
+      state.baseMs = getPickedMs();
+      state.times = Array.from({length: state.n}, () => state.baseMs);
+
+      // поддерживаем массив имён по длине
+      const newNames = [];
+      for (let i=0;i<state.n;i++){
+        newNames[i] = state.names[i] ?? `Игрок ${i+1}`;
+      }
+      state.names = newNames;
+
+      buildNamesEditor();
+      buildPlayers();
+    }
+
+    function addPlayer(){ setPlayersCount(state.n + 1); }
+    function removePlayer(){ setPlayersCount(state.n - 1); }
+
+    function onTimeChange(){
+      if (state.started) return;
+      state.baseMs = getPickedMs();
+      state.times = Array.from({length: state.n}, () => state.baseMs);
+      renderAll();
+      buildPlayers();
+    }
+
+    function tick(ts){
+      if (!state.running || state.paused || state.active < 0){
+        state.lastTs = ts;
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      const dt = ts - (state.lastTs || ts);
+      state.lastTs = ts;
+
+      if (!state.finished.has(state.active)){
+        state.times[state.active] -= dt;
+
+        if (state.times[state.active] <= 0){
+          state.times[state.active] = 0;
+          state.finished.add(state.active);
+
+          if (state.finished.size < state.n){
+            state.active = nextAlive(state.active);
+          }
+          renderAll();
+        } else {
+          const tEl = document.getElementById(`t-${state.active}`);
+          if (tEl) tEl.textContent = msToText(state.times[state.active]);
+          setStatusText();
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    // settings sheet
+    function openSettings(){
+      overlay.classList.add("open");
+      sheet.classList.add("open");
+      sheet.setAttribute("aria-hidden", "false");
+      updateSettingsLock();
+    }
+    function closeSettings(){
+      overlay.classList.remove("open");
+      sheet.classList.remove("open");
+      sheet.setAttribute("aria-hidden", "true");
+    }
+
+    // events
+    startBtn.addEventListener("click", start);
+    pauseBtn.addEventListener("click", pause);
+    resumeBtn.addEventListener("click", resume);
+    resetBtn.addEventListener("click", resetAll);
+
+    settingsBtn.addEventListener("click", openSettings);
+    closeSettingsBtn.addEventListener("click", closeSettings);
+    overlay.addEventListener("click", closeSettings);
+
+    mm.addEventListener("change", onTimeChange);
+    ss.addEventListener("change", onTimeChange);
+
+    plusBtn.addEventListener("click", addPlayer);
+    minusBtn.addEventListener("click", removePlayer);
+    playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
+
+    // init
+    setPicked(30_000);
+    state.baseMs = getPickedMs();
+    state.times = Array.from({length: state.n}, () => state.baseMs);
+    // инициализируем имена
+    state.names = Array.from({length: state.n}, (_, i) => state.names[i] ?? `Игрок ${i+1}`);
+
+    buildNamesEditor();
+    buildPlayers();
+    renderAll();
+    requestAnimationFrame(tick);
   </script>
 </body>
 </html>
