@@ -13,14 +13,16 @@
       --shadow: 0 14px 36px rgba(0,0,0,.45);
       --r: 18px;
 
-      --topH: 66px;
-      --bottomH: 90px;
-
       --pad: 12px;
       --gap: 10px;
+
+      --topH: 66px;
+      --bottomH: 98px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
+
+    /* Включаем прокрутку страницы */
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -29,14 +31,15 @@
         radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.10), transparent 60%),
         var(--bg);
       color:var(--text);
-      overflow:hidden;
+      overflow-y:auto;
+      overflow-x:hidden;
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
     }
 
+    /* НЕ fixed: чтобы можно было листать */
     .screen{
-      position:fixed;
-      inset:0;
+      min-height: 100svh;
       display:grid;
       grid-template-rows: var(--topH) 1fr var(--bottomH);
       padding:
@@ -46,7 +49,7 @@
         env(safe-area-inset-left);
     }
 
-    /* top */
+    /* top sticky */
     .top{
       display:flex;
       align-items:center;
@@ -54,6 +57,13 @@
       gap:10px;
       padding: 10px 12px;
       min-width:0;
+
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(7,10,20,.86);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,.06);
     }
     .topLeft{min-width:0; display:flex; flex-direction:column; gap:6px;}
     .title{
@@ -85,40 +95,35 @@
     /* arena */
     .arena{
       padding: var(--pad);
-      min-height:0;
       position:relative;
+      min-height: 580px; /* чтобы был смысл скроллить на маленьких экранах */
     }
 
-    /* layout: 3x3, центр под тексты, по краям “слоты” */
+    /* layout 3x3 (центр больше) */
     .ring{
-      position:absolute;
-      inset: var(--pad);
+      width: min(980px, 100%);
+      margin: 0 auto;
       display:grid;
       gap: var(--gap);
-      grid-template-columns: 1fr 1.25fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      min-height:0;
+      grid-template-columns: 1fr 1.55fr 1fr; /* центр шире */
+      grid-template-rows: 1fr 1.35fr 1fr;   /* центр выше */
+      min-height: min(78svh, 720px);
     }
 
+    /* центр */
     .center{
       grid-column: 2;
       grid-row: 2;
-      border-radius: 24px;
-      border:1px dashed rgba(255,255,255,.16);
-      background: rgba(255,255,255,.03);
+      border-radius: 26px;
+      border:1px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.04);
       position:relative;
       overflow:hidden;
-      display:grid;
-      place-items:center;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
     }
-
     .centerText{
       position:absolute;
-      left:50%;
-      top:50%;
-      transform: translate(-50%,-50%);
-      width: 100%;
-      height: 100%;
+      inset: 0;
       pointer-events:none;
     }
     .ct{
@@ -126,46 +131,48 @@
       left:50%;
       top:50%;
       transform-origin:center;
-      font-weight: 950;
       text-align:center;
-      color: rgba(255,255,255,.92);
+      font-weight: 950;
+      color: rgba(255,255,255,.93);
       font-variant-numeric: tabular-nums;
       line-height:1.12;
-      letter-spacing:.2px;
       text-shadow: 0 10px 22px rgba(0,0,0,.45);
       user-select:none;
-      padding: 6px 8px;
+      width: 68%;
     }
-    .ct .nm{font-size:12px; text-transform:uppercase; letter-spacing:.35px; opacity:.92}
-    .ct .tm{font-size:18px; margin-top:4px}
 
-    .ct.top    { transform: translate(-50%,-50%) translateY(-40%) rotate(180deg); }
-    .ct.right  { transform: translate(-50%,-50%) translateX(40%) rotate(270deg); }
-    .ct.bottom { transform: translate(-50%,-50%) translateY(40%) rotate(0deg); }
-    .ct.left   { transform: translate(-50%,-50%) translateX(-40%) rotate(90deg); }
+    /* Авто-размер шрифта через clamp + JS-доп. подстройка */
+    .ct .nm{
+      font-size: clamp(11px, 1.6vw, 16px);
+      text-transform:uppercase;
+      letter-spacing:.35px;
+      opacity:.92;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .ct .tm{
+      font-size: clamp(16px, 2.4vw, 26px);
+      margin-top: 5px;
+      white-space:nowrap;
+    }
+
+    .ct.top    { transform: translate(-50%,-50%) translateY(-44%) rotate(180deg); }
+    .ct.right  { transform: translate(-50%,-50%) translateX(44%) rotate(270deg); }
+    .ct.bottom { transform: translate(-50%,-50%) translateY(44%) rotate(0deg); }
+    .ct.left   { transform: translate(-50%,-50%) translateX(-44%) rotate(90deg); }
 
     /* slots */
-    .slot{
-      min-height:0;
-      display:none; /* показываем только нужные */
-    }
-    .slot.stack{
-      display:none;
-      min-height:0;
-      gap: var(--gap);
-    }
+    .slot{ min-height:0; display:none; }
 
-    /* fixed positions */
-    .s2 { grid-column:2; grid-row:1; }      /* top center */
-    .s1 { grid-column:2; grid-row:3; }      /* bottom center */
-    .sr { grid-column:3; grid-row:2; }      /* right middle (single) */
-    .sl { grid-column:1; grid-row:2; }      /* left middle (single) */
-    .srStack { grid-column:3; grid-row:2/4; display:grid; grid-template-rows:1fr 1fr; } /* right (two) */
-    .slStack { grid-column:1; grid-row:2/4; display:grid; grid-template-rows:1fr 1fr; } /* left (two) */
-    .br { grid-column:3; grid-row:3; }      /* bottom right */
-    .bl { grid-column:1; grid-row:3; }      /* bottom left */
-    .tr { grid-column:3; grid-row:1; }      /* top right */
-    .tl { grid-column:1; grid-row:1; }      /* top left */
+    .s2 { grid-column:2; grid-row:1; } /* top center */
+    .s1 { grid-column:2; grid-row:3; } /* bottom center */
+    .sr { grid-column:3; grid-row:2; } /* right middle */
+    .sl { grid-column:1; grid-row:2; } /* left middle */
+    .br { grid-column:3; grid-row:3; } /* bottom right */
+    .bl { grid-column:1; grid-row:3; } /* bottom left */
+    .tr { grid-column:3; grid-row:1; } /* top right */
+    .tl { grid-column:1; grid-row:1; } /* top left */
 
     /* player card */
     .player{
@@ -210,13 +217,13 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 55%;
+      max-width: 58%;
       text-transform: uppercase;
       letter-spacing:.25px;
     }
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(22px, 4.6vw, 34px);
+      font-size: clamp(22px, 4.4vw, 34px);
       font-weight: 950;
       letter-spacing:.6px;
       white-space:nowrap;
@@ -240,7 +247,7 @@
     .rot90  .inner{ transform: rotate(90deg); }
     .rot270 .inner{ transform: rotate(270deg); }
 
-    /* active highlight + dim others (как ты выбрал) */
+    /* active highlight + dim others */
     .ring.hasActive .player{
       filter: brightness(.62) saturate(.7);
     }
@@ -266,12 +273,18 @@
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
-    /* bottom */
+    /* bottom sticky (чтобы кнопки всегда доступны; при этом страницу можно скроллить) */
     .bottom{
-      padding: 8px 12px 12px;
+      padding: 10px 12px 12px;
       border-top: 1px solid rgba(255,255,255,.06);
-      background: rgba(5,7,16,.40);
-      backdrop-filter: blur(8px);
+      background: rgba(5,7,16,.70);
+      backdrop-filter: blur(10px);
+
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+    }
+    .bottomInner{
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -338,7 +351,7 @@
       background: rgba(10,14,28,.92);
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
-      max-height: 78vh;
+      max-height: 78svh;
       display:flex;
       flex-direction:column;
       overflow:hidden;
@@ -398,18 +411,18 @@
 
     <div class="arena">
       <div class="ring" id="ring">
-        <!-- слоты (будем включать/выключать в JS) -->
-        <div class="slot s2" id="slot2"></div>  <!-- Player 2 (top) -->
-        <div class="slot s1" id="slot1"></div>  <!-- Player 1 (bottom) -->
+        <!-- слоты -->
+        <div class="slot s2" id="slot2"></div>  <!-- Player 2 -->
+        <div class="slot s1" id="slot1"></div>  <!-- Player 1 -->
 
-        <div class="slot sr" id="slot3"></div>  <!-- Player 3 (right) -->
-        <div class="slot sl" id="slot4"></div>  <!-- Player 4 (left) -->
+        <div class="slot sr" id="slot3"></div>  <!-- Player 3 -->
+        <div class="slot sl" id="slot4"></div>  <!-- Player 4 -->
 
-        <div class="slot br" id="slot5"></div>  <!-- Player 5 (bottom-right) -->
-        <div class="slot bl" id="slot6"></div>  <!-- Player 6 (bottom-left) -->
+        <div class="slot br" id="slot5"></div>  <!-- Player 5 -->
+        <div class="slot bl" id="slot6"></div>  <!-- Player 6 -->
 
-        <div class="slot tr" id="slot7"></div>  <!-- Player 7 (top-right) -->
-        <div class="slot tl" id="slot8"></div>  <!-- Player 8 (top-left) -->
+        <div class="slot tr" id="slot7"></div>  <!-- Player 7 -->
+        <div class="slot tl" id="slot8"></div>  <!-- Player 8 -->
 
         <div class="center">
           <div class="centerText">
@@ -435,14 +448,16 @@
     </div>
 
     <div class="bottom">
-      <div class="btnRow">
-        <button class="btn primary" id="startBtn">Старт</button>
-        <button class="btn" id="pauseBtn" disabled>Пауза</button>
-        <button class="btn" id="resumeBtn" disabled>Продолжить</button>
-        <button class="btn danger" id="resetBtn">Сброс</button>
-      </div>
-      <div class="btnRow">
-        <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
+      <div class="bottomInner">
+        <div class="btnRow">
+          <button class="btn primary" id="startBtn">Старт</button>
+          <button class="btn" id="pauseBtn" disabled>Пауза</button>
+          <button class="btn" id="resumeBtn" disabled>Продолжить</button>
+          <button class="btn danger" id="resetBtn">Сброс</button>
+        </div>
+        <div class="btnRow">
+          <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
+        </div>
       </div>
     </div>
   </div>
@@ -571,9 +586,9 @@
       baseMs: 30_000,
       times: [],
       names: [],
-      active: -1,        // кто сейчас тратит время
-      started: false,    // нажали Старт (подготовили раунд)
-      running: false,    // реально тикает
+      active: -1,
+      started: false,
+      running: false,
       paused: true,
       lastTs: 0,
       finished: new Set(),
@@ -592,14 +607,13 @@
       ss.value = String(total%60);
     }
 
-    // Порядок по кругу: 1->2->3->4->5->6->7->8->1
-    function nextAliveAfter(playerIndex0){
-      // playerIndex0: 0..n-1, следующий по кругу
+    // следующий живой после i
+    function nextAliveAfter(i){
       for (let step=1; step<=state.n; step++){
-        const cand = (playerIndex0 + step) % state.n;
+        const cand = (i + step) % state.n;
         if (!state.finished.has(cand)) return cand;
       }
-      return playerIndex0;
+      return i;
     }
 
     function currentTurnName(){
@@ -611,13 +625,29 @@
       return msToText(state.times[state.active]);
     }
 
+    // Автоподбор размера имени в центре (чтобы не налезало)
+    function fitCenterName(text){
+      const len = (text || "").length;
+      // грубая, но рабочая шкала
+      if (len <= 10) return 1.0;
+      if (len <= 16) return 0.92;
+      if (len <= 22) return 0.84;
+      if (len <= 28) return 0.76;
+      return 0.68;
+    }
+
     function setCenterTexts(){
       const nm = currentTurnName();
       const tm = currentTurnTime();
-      ctNameTop.textContent = nm;
-      ctNameRight.textContent = nm;
-      ctNameBottom.textContent = nm;
-      ctNameLeft.textContent = nm;
+
+      const scale = fitCenterName(nm);
+      // применяем scale только к строке имени
+      for (const el of [ctNameTop, ctNameRight, ctNameBottom, ctNameLeft]){
+        el.textContent = nm;
+        el.style.transform = `scale(${scale})`;
+        el.style.transformOrigin = "center";
+      }
+
       ctTimeTop.textContent = tm;
       ctTimeRight.textContent = tm;
       ctTimeBottom.textContent = tm;
@@ -722,18 +752,8 @@
       return card;
     }
 
-    // СЛОТЫ по твоей логике добавления:
-    // 1: снизу (bottom center) normal
-    // 2: сверху (top center) rot180
-    // 3: справа (right middle) rot270 (чтобы “смотрел” к центру)
-    // 4: слева (left middle) rot90
-    // 5: справа снизу (bottom-right) normal
-    // 6: слева снизу (bottom-left) normal
-    // 7: справа сверху (top-right) rot180
-    // 8: слева сверху (top-left) rot180
-    function slotForPlayerNumber(p1to8){
-      return slots[p1to8];
-    }
+    // Слоты по твоей логике:
+    // 1 снизу, 2 сверху (перевёрнут), 3 справа, 4 слева, 5 справа-снизу, 6 слева-снизу, 7 справа-сверху, 8 слева-сверху
     function rotationClassForPlayerNumber(p){
       if (p === 2) return "rot180";
       if (p === 3) return "rot270";
@@ -756,8 +776,8 @@
       clearSlots();
 
       for (let p=1; p<=state.n; p++){
-        const i = p - 1; // index 0..n-1
-        const slot = slotForPlayerNumber(p);
+        const i = p - 1;
+        const slot = slots[p];
         const card = makeCard(i);
         const rot = rotationClassForPlayerNumber(p);
         if (rot) card.classList.add(rot);
@@ -914,7 +934,6 @@
           }
           renderAll();
         } else {
-          // обновляем только активный таймер + центр
           const tEl = document.getElementById(`time-${state.active}`);
           if (tEl) tEl.textContent = msToText(state.times[state.active]);
           setCenterTexts();
@@ -954,7 +973,7 @@
     minusBtn.addEventListener("click", removePlayer);
     playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
 
-    // init defaults (как ты хотел: по умолчанию 2 игрока)
+    // init defaults
     setPicked(30_000);
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
