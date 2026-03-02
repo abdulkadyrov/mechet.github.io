@@ -11,17 +11,17 @@
       --muted:rgba(243,246,255,.72);
       --border:rgba(255,255,255,.12);
       --shadow: 0 14px 36px rgba(0,0,0,.45);
-      --r: 22px;
-
-      --pad: 12px;
-      --gap: 12px;
 
       --topH: 64px;
       --bottomH: 92px;
+
+      --pad: 12px;
+      --gap: 12px;
+      --r: 22px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    html{ overflow:hidden; }
+    html,body{overflow:hidden}
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -30,11 +30,8 @@
         radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.10), transparent 60%),
         var(--bg);
       color:var(--text);
-      -webkit-tap-highlight-color: transparent;
       font-weight: 900;
-
-      /* без скроллинга страницы */
-      overflow:hidden;
+      -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
 
@@ -50,33 +47,20 @@
         env(safe-area-inset-left);
     }
 
-    /* top */
     .top{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
       padding: 10px 12px;
-      min-width:0;
       background: rgba(7,10,20,.72);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,.06);
+      min-width:0;
     }
     .topLeft{min-width:0; display:flex; flex-direction:column; gap:6px;}
-    .title{
-      font-size:14px;
-      letter-spacing:.2px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .hint{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
+    .title{font-size:14px; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .hint{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
     .pill{
       border:1px solid var(--border);
       background: rgba(255,255,255,.06);
@@ -89,7 +73,6 @@
       flex:0 0 auto;
     }
 
-    /* arena */
     .arena{
       padding: var(--pad);
       min-height:0;
@@ -97,17 +80,16 @@
       place-items:stretch;
     }
 
-    /* Ring layout (как на твоём скрине): 8 слотов вокруг пустого центра */
+    /* Базовое поле: 4x4, центр пустой; раскладка меняется через classes on .ring */
     .ring{
-      width: 100%;
-      height: 100%;
+      width:100%;
+      height:100%;
       display:grid;
       gap: var(--gap);
       grid-template-columns: 1.25fr 1fr 1fr 1.25fr;
       grid-template-rows: 1fr 1fr 1fr 1fr;
       min-height:0;
     }
-
     .centerEmpty{
       grid-column: 2 / 4;
       grid-row: 2 / 4;
@@ -116,23 +98,61 @@
       background: rgba(255,255,255,.02);
     }
 
+    /* СЛОТЫ (позиции будут переопределяться для n=2..8) */
     .slot{ display:none; min-height:0; }
 
-    /* TOP (два больших) */
-    .slot8{ grid-column: 1 / 3; grid-row: 1; }
-    .slot2{ grid-column: 3 / 5; grid-row: 1; }
+    /* По умолчанию (n=8) — как на твоём идеальном скрине */
+    .ring.n8 .slot-8{ grid-column: 1 / 3; grid-row: 1; }     /* top-left big */
+    .ring.n8 .slot-2{ grid-column: 3 / 5; grid-row: 1; }     /* top-right big */
 
-    /* LEFT (два вертикальных) */
-    .slot4{ grid-column: 1; grid-row: 2 / 3; }
-    .slot5{ grid-column: 1; grid-row: 3 / 4; }
+    .ring.n8 .slot-4{ grid-column: 1; grid-row: 2; }         /* left top vertical */
+    .ring.n8 .slot-5{ grid-column: 1; grid-row: 3; }         /* left bottom vertical */
 
-    /* RIGHT (два вертикальных) */
-    .slot3{ grid-column: 4; grid-row: 2 / 3; }
-    .slot6{ grid-column: 4; grid-row: 3 / 4; }
+    .ring.n8 .slot-3{ grid-column: 4; grid-row: 2; }         /* right top vertical */
+    .ring.n8 .slot-6{ grid-column: 4; grid-row: 3; }         /* right bottom vertical */
 
-    /* BOTTOM (два больших) */
-    .slot7{ grid-column: 1 / 3; grid-row: 4; }
-    .slot1{ grid-column: 3 / 5; grid-row: 4; }
+    .ring.n8 .slot-7{ grid-column: 1 / 3; grid-row: 4; }     /* bottom-left big */
+    .ring.n8 .slot-1{ grid-column: 3 / 5; grid-row: 4; }     /* bottom-right big */
+
+    /* n=7: убираем нижний левый большой (slot-7), остальные как n8 */
+    .ring.n7 .slot-8{ grid-column: 1 / 3; grid-row: 1; }
+    .ring.n7 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
+    .ring.n7 .slot-4{ grid-column: 1; grid-row: 2; }
+    .ring.n7 .slot-5{ grid-column: 1; grid-row: 3; }
+    .ring.n7 .slot-3{ grid-column: 4; grid-row: 2; }
+    .ring.n7 .slot-6{ grid-column: 4; grid-row: 3; }
+    .ring.n7 .slot-1{ grid-column: 3 / 5; grid-row: 4; }
+
+    /* n=6: только низ справа (1), верх справа (2), справа два (3,6), слева два (4,5) */
+    .ring.n6 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
+    .ring.n6 .slot-4{ grid-column: 1; grid-row: 2; }
+    .ring.n6 .slot-5{ grid-column: 1; grid-row: 3; }
+    .ring.n6 .slot-3{ grid-column: 4; grid-row: 2; }
+    .ring.n6 .slot-6{ grid-column: 4; grid-row: 3; }
+    .ring.n6 .slot-1{ grid-column: 3 / 5; grid-row: 4; }
+
+    /* n=5: 1 низ справа, 2 верх справа, справа два (3,5), слева один (4) */
+    .ring.n5 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
+    .ring.n5 .slot-4{ grid-column: 1; grid-row: 2 / 4; }  /* один большой вертикальный */
+    .ring.n5 .slot-3{ grid-column: 4; grid-row: 2; }
+    .ring.n5 .slot-5{ grid-column: 4; grid-row: 3; }
+    .ring.n5 .slot-1{ grid-column: 3 / 5; grid-row: 4; }
+
+    /* n=4: 1 низ (во всю ширину справа + центр), 2 верх (во всю ширину справа + центр),
+            3 справа большой вертикальный, 4 слева большой вертикальный */
+    .ring.n4 .slot-2{ grid-column: 2 / 5; grid-row: 1; }     /* top big */
+    .ring.n4 .slot-4{ grid-column: 1; grid-row: 2 / 4; }     /* left big vertical */
+    .ring.n4 .slot-3{ grid-column: 4; grid-row: 2 / 4; }     /* right big vertical */
+    .ring.n4 .slot-1{ grid-column: 1 / 4; grid-row: 4; }     /* bottom big */
+
+    /* n=3: как ты сказал/показал: 1 низ большой, 2 верх большой, 3 справа большой вертикальный */
+    .ring.n3 .slot-2{ grid-column: 1 / 5; grid-row: 1; }     /* top big */
+    .ring.n3 .slot-3{ grid-column: 4; grid-row: 2 / 4; }     /* right big vertical */
+    .ring.n3 .slot-1{ grid-column: 1 / 4; grid-row: 4; }     /* bottom big */
+
+    /* n=2: 1 низ большой, 2 верх большой */
+    .ring.n2 .slot-2{ grid-column: 1 / 5; grid-row: 1 / 3; } /* top huge */
+    .ring.n2 .slot-1{ grid-column: 1 / 5; grid-row: 3 / 5; } /* bottom huge */
 
     /* card */
     .player{
@@ -161,7 +181,6 @@
       opacity:.60;
       pointer-events:none;
     }
-
     .inner{
       position:relative;
       width:100%;
@@ -184,10 +203,9 @@
       text-overflow:ellipsis;
       max-width: 92%;
     }
-    /* СДЕЛАЛ БОЛЬШЕ */
     .time{
       font-variant-numeric: tabular-nums;
-      font-size: clamp(30px, 7.2vw, 58px);
+      font-size: clamp(32px, 7.8vw, 64px);
       font-weight: 950;
       letter-spacing:.8px;
       line-height:1;
@@ -207,7 +225,6 @@
     .rot90  .inner{ transform: rotate(90deg); }
     .rot270 .inner{ transform: rotate(270deg); }
 
-    /* active + dim */
     .ring.hasActive .player{ filter: brightness(.62) saturate(.7); }
     .ring.hasActive .player::after{
       content:"";
@@ -231,7 +248,6 @@
     }
     .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
-    /* bottom */
     .bottom{
       padding: 10px 12px 12px;
       border-top: 1px solid rgba(255,255,255,.06);
@@ -241,7 +257,7 @@
     .bottomInner{
       display:flex;
       align-items:center;
-      justify-content:flex-start; /* <-- рядом */
+      justify-content:flex-start;
       gap:8px;
       flex-wrap:wrap;
     }
@@ -273,7 +289,7 @@
       min-width: 132px;
     }
 
-    /* Settings sheet (скролл только внутри настроек) */
+    /* Settings sheet */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -337,248 +353,7 @@
       outline:none;
     }
     .timePick{display:flex; gap:8px; align-items:center}
-    .counter{display:flex; gap:8px; align-items:center}
-    .miniBtn{ min-width: 44px; padding: 10px 0; }
-    .names{ display:grid; gap:10px; margin-top: 8px; }
-    .nameRow{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:6px;
-      padding: 10px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.04);
-    }
-    .note{ color: var(--muted); font-size:12px; font-weight: 900; line-height:1.3; }
-  </style>
-</head>
-<body>
-  <div class="screen">
-    <div class="top">
-      <div class="topLeft">
-        <div class="title">Словесные часы</div>
-        <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего</div>
-      </div>
-      <div class="pill" id="status">Готово</div>
-    </div>
-
-    <div class="arena">
-      <div class="ring" id="ring">
-        <div class="centerEmpty"></div>
-
-        <div class="slot slot8" id="slot8"></div>
-        <div class="slot slot2" id="slot2"></div>
-
-        <div class="slot slot4" id="slot4"></div>
-        <div class="slot slot5" id="slot5"></div>
-
-        <div class="slot slot3" id="slot3"></div>
-        <div class="slot slot6" id="slot6"></div>
-
-        <div class="slot slot7" id="slot7"></div>
-        <div class="slot slot1" id="slot1"></div>
-      </div>
-    </div>
-
-    <div class="bottom">
-      <div class="bottomInner">
-        <button class="btn primary" id="startBtn">Старт</button>
-        <button class="btn" id="pauseBtn" disabled>Пауза</button>
-        <button class="btn" id="resumeBtn" disabled>Продолжить</button>
-        <button class="btn danger" id="resetBtn">Сброс</button>
-        <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings sheet -->
-  <div class="sheetOverlay" id="overlay"></div>
-  <div class="sheet" id="sheet" aria-hidden="true">
-    <div class="sheetCard" role="dialog" aria-modal="true">
-      <div class="sheetHead">
-        <div class="sheetTitle">Настройки</div>
-        <button class="btn sheetClose" id="closeSettingsBtn">Закрыть</button>
-      </div>
-
-      <div class="sheetBody">
-        <div class="row">
-          <div class="label">Время на игрока</div>
-          <div class="timePick">
-            <select id="mm"></select>
-            <div class="label">:</div>
-            <select id="ss"></select>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <div class="label">Игроков (2..8)</div>
-          <div class="counter">
-            <button class="btn miniBtn" id="minusBtn">−</button>
-            <div class="pill"><b id="playersCount">2</b></div>
-            <button class="btn miniBtn" id="plusBtn">+</button>
-          </div>
-        </div>
-
-        <div class="row">
-          <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
-        </div>
-
-        <div class="label" style="margin-top:10px;">Имена игроков</div>
-        <div class="names" id="namesBox"></div>
-
-        <div class="note" id="settingsNote" style="margin-top:10px;">
-          Настройки можно менять до нажатия «Старт». После старта — «Сброс», чтобы изменить.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const msToText = (ms) => {
-      ms = Math.max(0, ms);
-      const total = Math.ceil(ms / 1000);
-      const m = Math.floor(total / 60);
-      const s = total % 60;
-      return `${pad2(m)}:${pad2(s)}`;
-    };
-
-    const COLORS = [
-      { bg1:"#6D5CFF", bg2:"#4A33FF" }, // 1
-      { bg1:"#2FE07B", bg2:"#16B85E" }, // 2
-      { bg1:"#00C2FF", bg2:"#007CFF" }, // 3
-      { bg1:"#FFB020", bg2:"#FF7A00" }, // 4
-      { bg1:"#FF5C7A", bg2:"#E52B54" }, // 5
-      { bg1:"#A855F7", bg2:"#6D28D9" }, // 6
-      { bg1:"#22D3EE", bg2:"#0891B2" }, // 7
-      { bg1:"#FDE047", bg2:"#F59E0B" }, // 8
-    ];
-
-    const ring = document.getElementById("ring");
-    const hintTop = document.getElementById("hintTop");
-    const statusEl = document.getElementById("status");
-
-    const startBtn = document.getElementById("startBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
-    const resumeBtn = document.getElementById("resumeBtn");
-    const resetBtn = document.getElementById("resetBtn");
-
-    const settingsBtn = document.getElementById("settingsBtn");
-    const closeSettingsBtn = document.getElementById("closeSettingsBtn");
-    const overlay = document.getElementById("overlay");
-    const sheet = document.getElementById("sheet");
-
-    const mm = document.getElementById("mm");
-    const ss = document.getElementById("ss");
-    const minusBtn = document.getElementById("minusBtn");
-    const plusBtn = document.getElementById("plusBtn");
-    const playersRange = document.getElementById("playersRange");
-    const playersCount = document.getElementById("playersCount");
-    const namesBox = document.getElementById("namesBox");
-    const settingsNote = document.getElementById("settingsNote");
-
-    const slots = {
-      1: document.getElementById("slot1"),
-      2: document.getElementById("slot2"),
-      3: document.getElementById("slot3"),
-      4: document.getElementById("slot4"),
-      5: document.getElementById("slot5"),
-      6: document.getElementById("slot6"),
-      7: document.getElementById("slot7"),
-      8: document.getElementById("slot8"),
-    };
-
-    function fillSelect(select, max){
-      select.innerHTML = "";
-      for (let i=0;i<=max;i++){
-        const opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = pad2(i);
-        select.appendChild(opt);
-      }
-    }
-    fillSelect(mm, 59);
-    fillSelect(ss, 59);
-
-    const state = {
-      n: 2,
-      baseMs: 30_000,
-      times: [],
-      names: [],
-      active: -1,
-      started: false,
-      running: false,
-      paused: true,
-      lastTs: 0,
-      finished: new Set(),
-    };
-
-    function getPickedMs(){
-      const m = parseInt(mm.value, 10);
-      const s = parseInt(ss.value, 10);
-      let ms = (m*60 + s) * 1000;
-      if (ms <= 0) ms = 30_000;
-      return ms;
-    }
-    function setPicked(ms){
-      const total = Math.round(ms / 1000);
-      mm.value = String(Math.floor(total/60));
-      ss.value = String(total%60);
-    }
-
-    function nextAliveAfter(i){
-      for (let step=1; step<=state.n; step++){
-        const cand = (i + step) % state.n;
-        if (!state.finished.has(cand)) return cand;
-      }
-      return i;
-    }
-
-    function setStatusText(){
-      if (!state.started){
-        statusEl.textContent = "Готово";
-        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего";
-      } else if (!state.running){
-        statusEl.textContent = "Ожидание";
-        hintTop.textContent = "Нажми игрока X → пойдёт время у X+1 по кругу";
-      } else if (state.paused){
-        statusEl.textContent = "Пауза";
-        hintTop.textContent = "Пауза";
-      } else {
-        statusEl.textContent = "Идёт";
-        hintTop.textContent = "Нажми игрока → ход к следующему по кругу";
-      }
-    }
-
-    function updateButtons(){
-      startBtn.disabled = state.started;
-      pauseBtn.disabled = !state.running || state.paused;
-      resumeBtn.disabled = !state.running || !state.paused;
-    }
-
-    function updateSettingsLock(){
-      const locked = state.started;
-      mm.disabled = locked;
-      ss.disabled = locked;
-      minusBtn.disabled = locked;
-      plusBtn.disabled = locked;
-      playersRange.disabled = locked;
-      [...namesBox.querySelectorAll("input")].forEach(inp => inp.disabled = locked);
-
-      settingsNote.textContent = locked
-        ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
-        : "Можно менять время/игроков/имена. Нажми «Старт», затем нажми игрока.";
-    }
-
-    function buildNamesEditor(){
-      namesBox.innerHTML = "";
-      for (let i=0;i<state.n;i++){
-        const row = document.createElement("div");
-        row.className = "nameRow";
-
-        const label = document.createElement("div");
-        label.className = "label";
-        label.textContent = `Игрок ${i+1}`;
+    .counter{display:flex; gap:+1}`;
 
         const inp = document.createElement("input");
         inp.type = "text";
@@ -630,15 +405,15 @@
       return card;
     }
 
-    // Фикс-слоты по номеру игрока:
-    // 1 -> bottom-right (normal)
-    // 2 -> top-right (rot180)
-    // 3 -> right-top (rot270)
-    // 4 -> left-top (rot90)
-    // 5 -> left-bottom (rot90)
-    // 6 -> right-bottom (rot270)
-    // 7 -> bottom-left (normal)
-    // 8 -> top-left (rot180)
+    // Поворот “к центру” по номеру (по часовой стрелке):
+    // 1 (низ) normal
+    // 2 (верх) rot180
+    // 3 (право) rot270
+    // 4 (лево) rot90
+    // 5 (лево) rot90
+    // 6 (право) rot270
+    // 7 (низ) normal
+    // 8 (верх) rot180
     function rotationForPlayer(p){
       if (p === 2 || p === 8) return "rot180";
       if (p === 3 || p === 6) return "rot270";
@@ -648,14 +423,23 @@
 
     function clearSlots(){
       for (let p=1;p<=8;p++){
-        slots[p].style.display = "none";
-        slots[p].innerHTML = "";
+        const s = slots[p];
+        s.style.display = "none";
+        s.innerHTML = "";
       }
       ring.classList.remove("hasActive");
     }
 
+    function applyLayoutClass(){
+      ring.classList.remove("n2","n3","n4","n5","n6","n7","n8");
+      ring.classList.add(`n${state.n}`);
+    }
+
     function buildLayout(){
       clearSlots();
+      applyLayoutClass();
+
+      // показываем только 1..n и они идут по кругу по номерам
       for (let p=1; p<=state.n; p++){
         const i = p - 1;
         const slot = slots[p];
@@ -665,6 +449,8 @@
         slot.style.display = "block";
         slot.appendChild(card);
       }
+
+      setActiveQuickN();
       renderAll();
     }
 
@@ -820,7 +606,6 @@
       requestAnimationFrame(tick);
     }
 
-    // sheet
     function openSettings(){
       overlay.classList.add("open");
       sheet.classList.add("open");
@@ -851,6 +636,7 @@
     playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
 
     // init
+    buildQuickN();
     setPicked(30_000);
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
