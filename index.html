@@ -27,7 +27,6 @@
       color:var(--text);
       -webkit-tap-highlight-color: transparent;
       font-weight: 900;
-      /* ВАЖНО: не блокируем скролл на body */
       overflow:auto;
     }
 
@@ -90,17 +89,22 @@
 
     /* arena */
     .arena{ padding: 10px 12px; min-height:0; }
+
+    /* Всегда 2 колонки, чтобы было как на скрине */
     .grid{
       height:100%;
       width:100%;
       display:grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: 1fr;
       gap:10px;
       min-height:0;
+      --timeVw: 7.0vw;
     }
-    .grid.n2{ grid-template-rows:1fr 1fr; grid-template-columns:1fr; --timeVw: 9.6vw;}
-    .grid.n3,.grid.n4{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; --timeVw: 7.2vw;}
-    .grid.n5,.grid.n6{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr; --timeVw: 6.1vw;}
-    .grid.n7,.grid.n8{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr 1fr; --timeVw: 5.6vw;}
+    .grid.n2{ grid-template-rows: 1fr 1fr; --timeVw: 9.6vw; }
+    .grid.n3, .grid.n4{ grid-template-rows: 1fr 1fr; --timeVw: 7.2vw; }
+    .grid.n5, .grid.n6{ grid-template-rows: 1fr 1fr 1fr; --timeVw: 6.1vw; }
+    .grid.n7, .grid.n8{ grid-template-rows: 1fr 1fr 1fr 1fr; --timeVw: 5.6vw; }
 
     .player{
       border-radius: var(--r);
@@ -113,7 +117,7 @@
       min-height:0;
       display:grid;
       place-items:center;
-      transition: filter .15s ease, transform .15s ease, outline-color .15s ease;
+      transition: transform .12s ease, outline-color .12s ease, filter .12s ease, opacity .12s ease;
     }
     .player::before{
       content:"";
@@ -126,6 +130,7 @@
       opacity:.60;
       pointer-events:none;
     }
+
     .inner{
       position:relative;
       padding: 10px;
@@ -143,6 +148,10 @@
       text-transform:uppercase;
       opacity:.96;
       font-weight: 950;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 92%;
     }
     .time{
       font-variant-numeric: tabular-nums;
@@ -156,18 +165,34 @@
       font-weight: 950;
       opacity:.92;
     }
-    .player.active{
-      outline: 4px solid rgba(255,255,255,.55);
-      outline-offset: -4px;
-      filter: saturate(1.18) brightness(1.06);
+
+    /* Чёткое выделение + затемнение остальных */
+    .grid.hasActive .player{
+      filter: brightness(.60) saturate(.65);
+    }
+    .grid.hasActive .player::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.35); /* “черным 50%” примерно */
+      pointer-events:none;
+    }
+    .grid.hasActive .player.active{
+      filter: none;
       transform: translateY(-1px);
+      outline: 5px solid rgba(255,255,255,.75);
+      outline-offset: -5px;
     }
+    .grid.hasActive .player.active::after{
+      background: rgba(0,0,0,0);
+    }
+
     .player.lost{
-      opacity:.80;
+      opacity:.75;
       cursor:not-allowed;
-      filter: grayscale(.1);
+      filter: grayscale(.2) brightness(.55);
     }
-    .flip .inner{ transform: rotate(180deg); }
+    .player.lost::after{ background: rgba(0,0,0,.45) !important; }
 
     /* bottom controls */
     .bottom{
@@ -220,7 +245,7 @@
       white-space:nowrap;
     }
 
-    /* Settings drawer: делаем скролл ВНУТРИ */
+    /* Settings sheet: scroll внутри */
     .sheetOverlay{
       position:fixed;
       inset:0;
@@ -251,14 +276,11 @@
       background: rgba(10,14,28,.92);
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
-
-      /* ВАЖНО: фиксируем высоту и включаем прокрутку */
       max-height: 78vh;
       display:flex;
       flex-direction:column;
       overflow:hidden;
     }
-
     .sheetHandle{
       width:44px;
       height:5px;
@@ -267,7 +289,6 @@
       margin: 10px auto 6px;
       flex:0 0 auto;
     }
-
     .sheetHead{
       display:flex;
       align-items:center;
@@ -282,10 +303,9 @@
 
     .sheetBody{
       padding: 12px;
-      overflow:auto;               /* <-- вот тут скролл */
+      overflow:auto;
       -webkit-overflow-scrolling: touch;
     }
-
     .sheetGrid{ display:grid; gap:12px; }
     .row{
       display:flex;
@@ -333,7 +353,7 @@
         <div class="title">Словесные часы</div>
         <div class="turnLine">
           <div class="turnPill" id="turnTop">Ход: —</div>
-          <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока (время пойдёт у следующего)</div>
+          <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока</div>
         </div>
       </div>
       <div class="turnPill" id="status">Готово</div>
@@ -423,6 +443,34 @@
       { bg1:"#FDE047", bg2:"#F59E0B" },
     ];
 
+    // ПОРЯДОК “ПО КРУГУ” ДЛЯ СЕТКИ 2 колонки:
+    // Визуально: 1 (ЛВ) -> 2 (ПВ) -> 3 (под 2) -> 4 (под 3) -> 5 (под 4) -> 6 (слева от 5) -> 7 (над 6) -> 8 (над 7)
+    // Индексы (0..n-1) в порядке хода:
+    const SNAKE_ORDER_8 = [0,1,3,5,7,6,4,2]; // как на твоём описании (для 8)
+    // Для n<8 используем первые n элементов этого маршрута.
+    // Для n=2 будет [0,1], для n=3 [0,1,3] (мы корректно отфильтруем несуществующие).
+
+    function buildTurnOrder(n){
+      const max = Math.min(n, 8);
+      const base = SNAKE_ORDER_8.filter(i => i < max);
+      // Если n < 8, некоторые индексы (3,5...) могут не существовать.
+      // Тогда делаем “змейку” универсально: по колонкам как обход по периметру в 2 столбца.
+      if (base.length === n) return base;
+
+      // Универсальная “змейка” для 2 колонок: сверху вниз правый столбец, потом снизу вверх левый.
+      // Это очень близко к тому, что ты нарисовал как круг.
+      const rows = Math.ceil(n/2);
+      const right = [];
+      const left = [];
+      for (let r=0;r<rows;r++){
+        const li = r*2;
+        const ri = r*2 + 1;
+        if (ri < n) right.push(ri);
+        if (li < n) left.push(li);
+      }
+      return [left[0], ...right, ...left.slice(1).reverse()].filter(x => x !== undefined);
+    }
+
     // DOM
     const grid = document.getElementById("grid");
     const hintTop = document.getElementById("hintTop");
@@ -462,24 +510,18 @@
     fillSelect(ss, 59);
 
     const state = {
-      n: 2,
+      n: 8,
       baseMs: 30_000,
       times: [],
-      names: ["Игрок 1", "Игрок 2"],
+      names: [],
       active: -1,
       started: false,
       running: false,
       paused: true,
       lastTs: 0,
       finished: new Set(),
+      order: []
     };
-
-    function gridClassForN(n){
-      if (n === 2) return "n2";
-      if (n === 3 || n === 4) return "n3";
-      if (n === 5 || n === 6) return "n5";
-      return "n7";
-    }
 
     function getPickedMs(){
       const m = parseInt(mm.value, 10);
@@ -502,16 +544,16 @@
     function setStatusText(){
       if (!state.started){
         statusEl.textContent = "Готово";
-        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока (время пойдёт у следующего)";
+        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока (ход по кругу)";
       } else if (!state.running){
         statusEl.textContent = "Ожидание";
-        hintTop.textContent = "Нажми игрока X → сразу начнёт уменьшаться таймер игрока X+1 (по кругу)";
+        hintTop.textContent = "Нажми игрока → ход перейдёт к следующему по кругу";
       } else if (state.paused){
         statusEl.textContent = "Пауза";
         hintTop.textContent = "Пауза";
       } else {
         statusEl.textContent = "Идёт";
-        hintTop.textContent = "Нажми любого игрока → ход к следующему и его время уменьшается";
+        hintTop.textContent = "Нажми игрока → ход к следующему по кругу";
       }
 
       const turn = currentTurnName();
@@ -537,6 +579,13 @@
       settingsNote.textContent = locked
         ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
         : "Можно менять время/игроков/имена. Нажми «Старт», затем нажми любого игрока.";
+    }
+
+    function gridClassForN(n){
+      if (n === 2) return "n2";
+      if (n === 3 || n === 4) return "n3";
+      if (n === 5 || n === 6) return "n5";
+      return "n7";
     }
 
     function buildNamesEditor(){
@@ -568,7 +617,10 @@
 
     function buildPlayers(){
       grid.innerHTML = "";
+      grid.classList.remove("hasActive");
       grid.className = `grid ${gridClassForN(state.n)}`;
+
+      state.order = buildTurnOrder(state.n);
 
       for (let i=0;i<state.n;i++){
         const c = COLORS[i % COLORS.length];
@@ -577,8 +629,6 @@
         card.className = "player";
         card.dataset.i = String(i);
         card.style.background = `linear-gradient(180deg, ${c.bg1}, ${c.bg2})`;
-
-        if (state.n === 2 && i === 0) card.classList.add("flip");
 
         const inner = document.createElement("div");
         inner.className = "inner";
@@ -612,9 +662,12 @@
 
     function renderAll(){
       const cards = [...grid.querySelectorAll(".player")];
+      const hasActive = state.running && !state.paused && state.active >= 0;
+      grid.classList.toggle("hasActive", hasActive);
+
       cards.forEach(el => {
         const i = parseInt(el.dataset.i, 10);
-        el.classList.toggle("active", state.running && !state.paused && i === state.active);
+        el.classList.toggle("active", hasActive && i === state.active);
         el.classList.toggle("lost", state.finished.has(i));
       });
 
@@ -624,11 +677,15 @@
 
         const sEl = document.getElementById(`s-${i}`);
         if (!sEl) continue;
+
         if (state.finished.has(i)) sEl.textContent = "Вышло";
         else if (!state.started) sEl.textContent = "После Старт";
-        else if (!state.running) sEl.textContent = "Нажми → ход следующему";
+        else if (!state.running) sEl.textContent = "Нажми → ход по кругу";
         else if (state.paused) sEl.textContent = "Пауза";
-        else sEl.textContent = (i === state.active) ? "Сейчас идёт" : "Нажми → ход следующему";
+        else {
+          const nm = state.names[state.active] ?? `Игрок ${state.active+1}`;
+          sEl.textContent = (i === state.active) ? `Сейчас: ${nm}` : "Нажми → ход по кругу";
+        }
       }
 
       playersCount.textContent = String(state.n);
@@ -639,21 +696,26 @@
       updateSettingsLock();
     }
 
-    function nextAlive(from){
-      let j = from;
-      for (let step=0; step<state.n; step++){
-        j = (j + 1) % state.n;
-        if (!state.finished.has(j)) return j;
+    function nextAliveByOrder(fromIndex){
+      // fromIndex — текущий игрок, ищем следующего по state.order
+      const order = state.order;
+      const pos = order.indexOf(fromIndex);
+      if (pos === -1) return fromIndex;
+
+      for (let step=1; step<=order.length; step++){
+        const cand = order[(pos + step) % order.length];
+        if (!state.finished.has(cand)) return cand;
       }
-      return from;
+      return fromIndex;
     }
 
+    // Ход по кругу: нажал игрок i -> ход к следующему в order после i
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
       if (state.finished.size >= state.n) return;
 
-      const next = nextAlive(i);
+      const next = nextAliveByOrder(i);
 
       if (!state.running){
         state.running = true;
@@ -755,7 +817,8 @@
           state.finished.add(state.active);
 
           if (state.finished.size < state.n){
-            state.active = nextAlive(state.active);
+            // если у текущего вышло время — по кругу к следующему живому
+            state.active = nextAliveByOrder(state.active);
           }
           renderAll();
         } else {
@@ -799,9 +862,10 @@
 
     // init
     setPicked(30_000);
+    state.n = 8;
     state.baseMs = getPickedMs();
     state.times = Array.from({length: state.n}, () => state.baseMs);
-    state.names = Array.from({length: state.n}, (_, i) => state.names[i] ?? `Игрок ${i+1}`);
+    state.names = Array.from({length: state.n}, (_, i) => `Игрок ${i+1}`);
 
     buildNamesEditor();
     buildPlayers();
