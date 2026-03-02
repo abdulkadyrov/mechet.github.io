@@ -99,7 +99,7 @@
 
     .slot{ display:none; min-height:0; }
 
-    /* ======= LAYOUTS n=2..8 (как ты просил) ======= */
+    /* ======= LAYOUTS n=2..8 ======= */
 
     /* 8 */
     .ring.n8 .slot-8{ grid-column: 1 / 3; grid-row: 1; }
@@ -111,7 +111,7 @@
     .ring.n8 .slot-7{ grid-column: 1 / 3; grid-row: 4; }
     .ring.n8 .slot-1{ grid-column: 3 / 5; grid-row: 4; }
 
-    /* 7: 7 как 2 (верх, rot180), 1 внизу широкий */
+    /* 7 */
     .ring.n7 .slot-7{ grid-column: 1 / 3; grid-row: 1; }
     .ring.n7 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
     .ring.n7 .slot-5{ grid-column: 1; grid-row: 2; }
@@ -120,7 +120,7 @@
     .ring.n7 .slot-6{ grid-column: 4; grid-row: 3; }
     .ring.n7 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
 
-    /* 6: 1 и 2 по ширине большие */
+    /* 6 */
     .ring.n6 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
     .ring.n6 .slot-5{ grid-column: 1; grid-row: 2; }
     .ring.n6 .slot-4{ grid-column: 1; grid-row: 3; }
@@ -128,7 +128,7 @@
     .ring.n6 .slot-6{ grid-column: 4; grid-row: 3; }
     .ring.n6 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
 
-    /* 5: 1 и 2 по ширине большие */
+    /* 5 */
     .ring.n5 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
     .ring.n5 .slot-4{ grid-column: 1; grid-row: 2 / 4; }
     .ring.n5 .slot-3{ grid-column: 4; grid-row: 2; }
@@ -483,13 +483,14 @@
       { bg1:"#FDE047", bg2:"#F59E0B" },
     ];
 
+    // ОБНОВЛЕНО: очередность для 6 и 7 по твоему сообщению
     const TURN_ORDER_BY_N = {
       2: [1,2],
       3: [1,2,3],
       4: [1,4,2,3],
       5: [1,4,2,3,5],
-      6: [1,5,4,2,3,6],
-      7: [1,5,4,7,2,3,6],
+      6: [1,4,5,2,3,6],        // <-- исправлено
+      7: [1,4,5,7,2,3,6],      // <-- исправлено
       8: [1,7,5,4,8,2,3,6],
     };
 
@@ -562,12 +563,9 @@
 
     function nextByCustomOrderAfterPlayer(playerNum){
       const order = getOrder();
-
-      // только живые (не выбывшие)
       const alive = order.filter(p => !state.finished.has(indexFromPlayerNum(p)));
       if (alive.length === 0) return -1;
 
-      // если текущий не в alive (например выбыл) — стартуем с первого
       const idx = alive.indexOf(playerNum);
       const nextP = alive[(idx >= 0 ? idx + 1 : 0) % alive.length];
       return indexFromPlayerNum(nextP);
@@ -700,10 +698,17 @@
       return card;
     }
 
-    // Повороты оставляем как раньше (визуально к центру)
-    // 1 normal, 2 rot180, 3 rot270, 4 rot90, 5 rot90, 6 rot270, 7 normal, 8 rot180
+    // Повороты:
+    // - по умолчанию: 1 normal, 2 rot180, 3 rot270, 4 rot90, 5 rot90, 6 rot270, 7 normal, 8 rot180
+    // НО:
+    // - при n=5 игрок 5 стоит справа, должен смотреть в центр => rot270
+    // - при n=8 игрок 7 должен смотреть как игрок 1 (normal)
     function rotationForPlayer(p){
-      if (p === 2 || p === 7 || p === 8) return "rot180"; // 7 сверху в режиме n=7 тоже вверх
+      // специальные случаи
+      if (state.n === 5 && p === 5) return "rot270"; // <-- исправление для 5 игроков
+      if (state.n === 8 && p === 7) return "";       // <-- как 1 (normal)
+
+      if (p === 2 || p === 8 || (state.n === 7 && p === 7)) return "rot180";
       if (p === 3 || p === 6) return "rot270";
       if (p === 4 || p === 5) return "rot90";
       return "";
@@ -731,8 +736,10 @@
         const i = p - 1;
         const slot = slots[p];
         const card = makeCard(i);
+
         const rot = rotationForPlayer(p);
         if (rot) card.classList.add(rot);
+
         slot.style.display = "block";
         slot.appendChild(card);
       }
@@ -774,7 +781,7 @@
       updateSettingsLock();
     }
 
-    // Нажал игрока i -> ходит следующий по КАСТОМНОМУ порядку для текущего n
+    // Нажал игрока i -> ходит следующий по КАСТОМНОМУ порядку
     function onTap(i){
       if (!state.started) return;
       if (state.running && state.paused) return;
@@ -883,7 +890,6 @@
           state.times[state.active] = 0;
           state.finished.add(state.active);
 
-          // если кто-то ещё жив — передаём ход следующему по порядку
           if (state.finished.size < state.n){
             const currentP = playerNumFromIndex(state.active);
             const nextIndex = nextByCustomOrderAfterPlayer(currentP);
