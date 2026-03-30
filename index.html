@@ -1,955 +1,803 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Словесные часы</title>
+  <title>Мониторинг сна: движение + эпизоды видео (iPhone)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <style>
-    :root{
-      --bg:#070A14;
-      --text:#F3F6FF;
-      --muted:rgba(243,246,255,.72);
-      --border:rgba(255,255,255,.12);
-      --shadow: 0 14px 36px rgba(0,0,0,.45);
-
-      --topH: 64px;
-      --bottomH: 92px;
-
-      --pad: 12px;
-      --gap: 12px;
-      --r: 22px;
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050509;
+      color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    html,body{overflow:hidden}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(900px 700px at 20% 10%, rgba(124,92,255,.18), transparent 60%),
-        radial-gradient(900px 700px at 80% 30%, rgba(47,224,123,.10), transparent 60%),
-        var(--bg);
-      color:var(--text);
-      font-weight: 900;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+    header {
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #151524, #070713);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-
-    .screen{
-      position:fixed;
-      inset:0;
-      display:grid;
-      grid-template-rows: var(--topH) 1fr var(--bottomH);
-      padding:
-        env(safe-area-inset-top)
-        env(safe-area-inset-right)
-        env(safe-area-inset-bottom)
-        env(safe-area-inset-left);
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
     }
-
-    .top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding: 10px 12px;
-      background: rgba(7,10,20,.72);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      min-width:0;
+    header p {
+      margin: 3px 0 0;
+      font-size: 13px;
+      color: #b0b0c0;
     }
-    .topLeft{min-width:0; display:flex; flex-direction:column; gap:6px;}
-    .title{font-size:14px; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .hint{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .pill{
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      border-radius: 999px;
-      padding: 8px 10px;
-      font-size:12px;
-      font-weight: 950;
-      white-space:nowrap;
-      box-shadow: 0 10px 22px rgba(0,0,0,.25);
-      flex:0 0 auto;
+    main {
+      padding: 10px 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-
-    .arena{
-      padding: var(--pad);
-      min-height:0;
-      display:grid;
-      place-items:stretch;
-    }
-
-    .ring{
-      width:100%;
-      height:100%;
-      display:grid;
-      gap: var(--gap);
-      grid-template-columns: 1.25fr 1fr 1fr 1.25fr;
-      grid-template-rows: 1fr 1fr 1fr 1fr;
-      min-height:0;
-    }
-    .centerEmpty{
-      grid-column: 2 / 4;
-      grid-row: 2 / 4;
-      border-radius: 26px;
-      border:1px dashed rgba(255,255,255,.10);
-      background: rgba(255,255,255,.02);
-    }
-
-    .slot{ display:none; min-height:0; }
-
-    /* ======= LAYOUTS n=2..8 ======= */
-
-    /* 8 */
-    .ring.n8 .slot-8{ grid-column: 1 / 3; grid-row: 1; }
-    .ring.n8 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
-    .ring.n8 .slot-4{ grid-column: 1; grid-row: 2; }
-    .ring.n8 .slot-5{ grid-column: 1; grid-row: 3; }
-    .ring.n8 .slot-3{ grid-column: 4; grid-row: 2; }
-    .ring.n8 .slot-6{ grid-column: 4; grid-row: 3; }
-    .ring.n8 .slot-7{ grid-column: 1 / 3; grid-row: 4; }
-    .ring.n8 .slot-1{ grid-column: 3 / 5; grid-row: 4; }
-
-    /* 7 */
-    .ring.n7 .slot-7{ grid-column: 1 / 3; grid-row: 1; }
-    .ring.n7 .slot-2{ grid-column: 3 / 5; grid-row: 1; }
-    .ring.n7 .slot-5{ grid-column: 1; grid-row: 2; }
-    .ring.n7 .slot-4{ grid-column: 1; grid-row: 3; }
-    .ring.n7 .slot-3{ grid-column: 4; grid-row: 2; }
-    .ring.n7 .slot-6{ grid-column: 4; grid-row: 3; }
-    .ring.n7 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
-
-    /* 6 */
-    .ring.n6 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
-    .ring.n6 .slot-5{ grid-column: 1; grid-row: 2; }
-    .ring.n6 .slot-4{ grid-column: 1; grid-row: 3; }
-    .ring.n6 .slot-3{ grid-column: 4; grid-row: 2; }
-    .ring.n6 .slot-6{ grid-column: 4; grid-row: 3; }
-    .ring.n6 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
-
-    /* 5 */
-    .ring.n5 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
-    .ring.n5 .slot-4{ grid-column: 1; grid-row: 2 / 4; }
-    .ring.n5 .slot-3{ grid-column: 4; grid-row: 2; }
-    .ring.n5 .slot-5{ grid-column: 4; grid-row: 3; }
-    .ring.n5 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
-
-    /* 4 */
-    .ring.n4 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
-    .ring.n4 .slot-4{ grid-column: 1; grid-row: 2 / 4; }
-    .ring.n4 .slot-3{ grid-column: 4; grid-row: 2 / 4; }
-    .ring.n4 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
-
-    /* 3 */
-    .ring.n3 .slot-2{ grid-column: 1 / 5; grid-row: 1; }
-    .ring.n3 .slot-3{ grid-column: 4; grid-row: 2 / 4; }
-    .ring.n3 .slot-1{ grid-column: 1 / 5; grid-row: 4; }
-
-    /* 2 */
-    .ring.n2 .slot-2{ grid-column: 1 / 5; grid-row: 1 / 3; }
-    .ring.n2 .slot-1{ grid-column: 1 / 5; grid-row: 3 / 5; }
-
-    /* ======= CARD ======= */
-    .player{
-      width:100%;
-      height:100%;
-      border-radius: var(--r);
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      cursor:pointer;
-      user-select:none;
-      position:relative;
-      display:grid;
-      place-items:center;
-      min-height:0;
-      transition: filter .12s ease, transform .12s ease, outline-color .12s ease, opacity .12s ease;
-    }
-    .player::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(180px 180px at 20% 15%, rgba(255,255,255,.26), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,0));
-      mix-blend-mode: overlay;
-      opacity:.60;
-      pointer-events:none;
-    }
-    .inner{
-      position:relative;
-      width:100%;
-      height:100%;
-      padding: 14px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      text-align:center;
-    }
-    .name{
-      font-size: clamp(12px, 2.2vw, 16px);
-      font-weight: 950;
-      text-transform: uppercase;
-      letter-spacing:.25px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 92%;
-    }
-    .time{
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(32px, 7.8vw, 64px);
-      font-weight: 950;
-      letter-spacing:.8px;
-      line-height:1;
-      white-space:nowrap;
-    }
-    .sub{
-      font-size: clamp(11px, 2.1vw, 14px);
-      font-weight: 950;
-      opacity:.92;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 92%;
-    }
-
-    .rot180 .inner{ transform: rotate(180deg); }
-    .rot90  .inner{ transform: rotate(90deg); }
-    .rot270 .inner{ transform: rotate(270deg); }
-
-    .ring.hasActive .player{ filter: brightness(.62) saturate(.7); }
-    .ring.hasActive .player::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.35);
-      pointer-events:none;
-    }
-    .ring.hasActive .player.active{
-      filter:none;
-      outline: 6px solid rgba(255,255,255,.80);
-      outline-offset: -6px;
-      transform: translateY(-1px);
-    }
-    .ring.hasActive .player.active::after{ background: rgba(0,0,0,0); }
-
-    .player.lost{
-      opacity:.78;
-      cursor:not-allowed;
-      filter: grayscale(.2) brightness(.55);
-    }
-    .player.lost::after{ background: rgba(0,0,0,.45) !important; }
-
-    .bottom{
-      padding: 10px 12px 12px;
-      border-top: 1px solid rgba(255,255,255,.06);
-      background: rgba(5,7,16,.72);
-      backdrop-filter: blur(10px);
-    }
-    .bottomInner{
-      display:flex;
-      align-items:center;
-      justify-content:flex-start;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .btn{
-      appearance:none;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      padding:11px 12px;
-      border-radius: 14px;
-      cursor:pointer;
-      font-weight: 950;
-      line-height:1;
-      white-space:nowrap;
-      min-width: 108px;
-      text-align:center;
-    }
-    .btn:disabled{opacity:.55; cursor:not-allowed}
-    .btn.primary{
-      background: linear-gradient(180deg, rgba(124,92,255,1), rgba(124,92,255,.72));
-      border-color: rgba(124,92,255,.55);
-    }
-    .btn.danger{
-      background: rgba(255,92,122,.14);
-      border-color: rgba(255,92,122,.40);
-    }
-    .btn.ghost{
-      background: rgba(255,255,255,.06);
-      min-width: 132px;
-    }
-
-    /* Settings sheet */
-    .sheetOverlay{
-      position:fixed;
-      inset:0;
-      background: rgba(0,0,0,.45);
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease;
-      z-index: 30;
-    }
-    .sheetOverlay.open{ opacity:1; pointer-events:auto; }
-    .sheet{
-      position:fixed;
-      left:0; right:0;
-      bottom:0;
-      transform: translateY(105%);
-      transition: transform .22s ease;
-      padding:
-        10px
-        max(10px, env(safe-area-inset-right))
-        max(10px, env(safe-area-inset-bottom))
-        max(10px, env(safe-area-inset-left));
-      z-index: 31;
-    }
-    .sheet.open{ transform: translateY(0); }
-    .sheetCard{
-      border-radius: 20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(10,14,28,.92);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      max-height: 78svh;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-    }
-    .sheetHead{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding: 10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      flex:0 0 auto;
-    }
-    .sheetTitle{ font-size:14px; font-weight: 950; letter-spacing:.2px; }
-    .sheetClose{ min-width: 96px; }
-    .sheetBody{
-      padding: 12px;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-    .label{ font-size:12px; font-weight: 950; color: var(--muted); }
-    select, input[type="range"], input[type="text"]{
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      padding:10px 10px;
-      font-weight: 950;
-      outline:none;
-    }
-    .timePick{display:flex; gap:8px; align-items:center}
-    .counter{display:flex; gap:8px; align-items:center}
-    .miniBtn{ min-width: 44px; padding: 10px 0; }
-    .names{ display:grid; gap:10px; margin-top: 8px; }
-    .nameRow{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:6px;
+    section {
+      background: #10101a;
+      border-radius: 12px;
       padding: 10px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    .note{ color: var(--muted); font-size:12px; font-weight: 900; line-height:1.3; }
-
-    .quickN{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-    .chip{
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      padding:10px 12px;
+    section h2 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    section h2 span.label {
+      font-size: 11px;
+      padding: 2px 6px;
       border-radius: 999px;
-      font-weight: 950;
-      cursor:pointer;
-      min-width: 44px;
-      text-align:center;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #d0d0ff;
+      background: rgba(80,80,200,0.15);
     }
-    .chip.active{
-      border-color: rgba(124,92,255,.60);
-      background: rgba(124,92,255,.22);
+    .video-container {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 16 / 9;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+    .overlay-status {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      color: #f0f0ff;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #aaa;
+    }
+    .dot.active {
+      background: #ff4f4f;
+      box-shadow: 0 0 8px #ff4f4f;
+    }
+    .status-text { font-weight: 500; }
+    .status-sub { font-size: 10px; opacity: 0.75; }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: #2f2f55;
+      color: #f5f5ff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+    }
+    button.secondary {
+      background: #222235;
+      color: #d0d0e5;
+    }
+    button.danger {
+      background: #702626;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    button.small {
+      padding: 6px 10px;
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+    .hint {
+      font-size: 11px;
+      color: #a0a0b8;
+      line-height: 1.4;
+    }
+    .metrics {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .metric-item {
+      flex: 1;
+      min-width: 80px;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: #9a9ab2;
+    }
+    .metric-value {
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .metric-sub {
+      font-size: 10px;
+      color: #77779a;
+      margin-top: 1px;
+    }
+    .error { color: #ff8888; font-size: 11px; margin-top: 4px; }
+    .ok { color: #88ffb0; font-size: 11px; margin-top: 4px; }
+
+    .events-list {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-top: 6px;
+      padding-right: 4px;
+    }
+    .event-item {
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(30,30,70,0.35);
+    }
+    .event-label {
+      font-size: 11px;
+      color: #a0a0cc;
+    }
+    .event-time {
+      font-size: 11px;
+      color: #e0e0ff;
+      font-variant-numeric: tabular-nums;
+    }
+    .no-events {
+      font-size: 12px;
+      color: #7a7a95;
+    }
+
+    .episodes-list {
+      max-height: 220px;
+      overflow-y: auto;
+      margin-top: 6px;
+      padding-right: 4px;
+    }
+    .episode-item {
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 4px;
+      background: rgba(20,60,40,0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .episode-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .episode-title { font-size: 12px; font-weight: 500; }
+    .episode-time { font-size: 11px; color: #d0ffd0; }
+    .episode-length { font-size: 11px; color: #9ad09a; }
+
+    footer {
+      padding: 6px 14px 10px;
+      font-size: 10px;
+      color: #666680;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="screen">
-    <div class="top">
-      <div class="topLeft">
-        <div class="title">Словесные часы</div>
-        <div class="hint" id="hintTop">⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего</div>
-      </div>
-      <div class="pill" id="status">Готово</div>
-    </div>
+  <header>
+    <h1>Мониторинг сна (iPhone)</h1>
+    <p>Камера + движение, видеоэпизоды при движении</p>
+  </header>
 
-    <div class="arena">
-      <div class="ring n2" id="ring">
-        <div class="centerEmpty"></div>
-
-        <div class="slot slot-1" id="slot1"></div>
-        <div class="slot slot-2" id="slot2"></div>
-        <div class="slot slot-3" id="slot3"></div>
-        <div class="slot slot-4" id="slot4"></div>
-        <div class="slot slot-5" id="slot5"></div>
-        <div class="slot slot-6" id="slot6"></div>
-        <div class="slot slot-7" id="slot7"></div>
-        <div class="slot slot-8" id="slot8"></div>
-      </div>
-    </div>
-
-    <div class="bottom">
-      <div class="bottomInner">
-        <button class="btn primary" id="startBtn">Старт</button>
-        <button class="btn" id="pauseBtn" disabled>Пауза</button>
-        <button class="btn" id="resumeBtn" disabled>Продолжить</button>
-        <button class="btn danger" id="resetBtn">Сброс</button>
-        <button class="btn ghost" id="settingsBtn">⚙ Настройки</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings -->
-  <div class="sheetOverlay" id="overlay"></div>
-  <div class="sheet" id="sheet" aria-hidden="true">
-    <div class="sheetCard" role="dialog" aria-modal="true">
-      <div class="sheetHead">
-        <div class="sheetTitle">Настройки</div>
-        <button class="btn sheetClose" id="closeSettingsBtn">Закрыть</button>
-      </div>
-
-      <div class="sheetBody">
-        <div class="row">
-          <div class="label">Время на игрока</div>
-          <div class="timePick">
-            <select id="mm"></select>
-            <div class="label">:</div>
-            <select id="ss"></select>
+  <main>
+    <!-- Камера и сессия -->
+    <section>
+      <h2>Камера <span class="label">Сессия</span></h2>
+      <div class="video-container">
+        <video id="sleepVideo" playsinline muted></video>
+        <div class="overlay-status">
+          <span class="dot" id="recDot"></span>
+          <div>
+            <div class="status-text" id="videoStatus">Ожидание</div>
+            <div class="status-sub" id="sessionStatus">Сессия не запущена</div>
           </div>
         </div>
-
-        <div class="row" style="margin-top:10px;">
-          <div class="label">Игроков (2..8)</div>
-          <div class="counter">
-            <button class="btn miniBtn" id="minusBtn">−</button>
-            <div class="pill"><b id="playersCount">2</b></div>
-            <button class="btn miniBtn" id="plusBtn">+</button>
-          </div>
+      </div>
+      <div class="controls">
+        <div class="btn-row">
+          <button id="startSessionBtn">Начать сессию</button>
+          <button id="stopSessionBtn" class="danger" disabled>Остановить</button>
         </div>
-
-        <div class="row">
-          <input id="playersRange" type="range" min="2" max="8" step="1" value="2" style="width:100%"/>
+        <div class="hint">
+          Поставь айфон так, чтобы камера смотрела на кровать, и подключи к зарядке.  
+          Во время сна ничего нажимать не нужно — всё сохранится в памяти страницы.
         </div>
+        <div id="videoError" class="error" style="display:none;"></div>
+      </div>
+    </section>
 
-        <div class="label" style="margin-top:10px;">Быстрый выбор раскладки</div>
-        <div class="quickN" id="quickN"></div>
-
-        <div class="label" style="margin-top:10px;">Имена игроков</div>
-        <div class="names" id="namesBox"></div>
-
-        <div class="note" id="settingsNote" style="margin-top:10px;">
-          Настройки можно менять до нажатия «Старт». После старта — «Сброс», чтобы изменить.
+    <!-- Движение -->
+    <section>
+      <h2>Движение <span class="label">Акселерометр</span></h2>
+      <div class="controls">
+        <div class="btn-row">
+          <button id="motionPermBtn" class="secondary small">Разрешить датчики движения</button>
+        </div>
+        <div class="hint">
+          На iOS 13+ нужно явно разрешить доступ к датчикам движения (нажать кнопку выше и согласиться).
+        </div>
+        <div id="motionStatus" class="error" style="display:none;"></div>
+      </div>
+      <div class="metrics">
+        <div class="metric-item">
+          <div class="metric-label">Интенсивность (последняя)</div>
+          <div class="metric-value" id="lastIntensity">0.00</div>
+          <div class="metric-sub">g-составляющая</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Порог движения</div>
+          <div class="metric-value" id="thresholdLabel">2.00</div>
+          <div class="metric-sub">можно изменить в коде</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Событий движения</div>
+          <div class="metric-value" id="movementCount">0</div>
+          <div class="metric-sub">за сессию</div>
         </div>
       </div>
-    </div>
-  </div>
+      <div class="events-list" id="eventsList">
+        <div class="no-events">Пока нет зафиксированных движений.</div>
+      </div>
+    </section>
+
+    <!-- Эпизоды -->
+    <section>
+      <h2>Эпизоды видео <span class="label">После остановки</span></h2>
+      <div class="controls">
+        <div class="btn-row">
+          <button id="downloadAllBtn" class="secondary small" disabled>Скачать все эпизоды</button>
+        </div>
+        <div class="hint">
+          Эпизоды появляются, когда сессия остановлена.  
+          Каждый эпизод — фрагмент видео вокруг движения. Нажми “Скачать”, чтобы сохранить файл.
+        </div>
+      </div>
+      <div class="episodes-list" id="episodesList">
+        <div class="no-events">Эпизоды ещё не сформированы.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Всё хранится только в памяти этой вкладки. Если её закрыть или перезагрузить — данные исчезнут.
+  </footer>
 
   <script>
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const msToText = (ms) => {
-      ms = Math.max(0, ms);
-      const total = Math.ceil(ms / 1000);
-      const m = Math.floor(total / 60);
-      const s = total % 60;
-      return `${pad2(m)}:${pad2(s)}`;
-    };
+    // ===== НАСТРОЙКИ =====
+    const MOVEMENT_THRESHOLD = 2.0;
+    const PROCESS_INTERVAL_MS = 200;
+    const SEGMENT_DURATION_MS = 10_000;
+    const PRE_ROLL_MS = 10_000;
+    const POST_ROLL_MS = 10_000;
+    const SILENCE_TO_END_MS = 20_000;
 
-    const COLORS = [
-      { bg1:"#6D5CFF", bg2:"#4A33FF" },
-      { bg1:"#2FE07B", bg2:"#16B85E" },
-      { bg1:"#00C2FF", bg2:"#007CFF" },
-      { bg1:"#FFB020", bg2:"#FF7A00" },
-      { bg1:"#FF5C7A", bg2:"#E52B54" },
-      { bg1:"#A855F7", bg2:"#6D28D9" },
-      { bg1:"#22D3EE", bg2:"#0891B2" },
-      { bg1:"#FDE047", bg2:"#F59E0B" },
-    ];
+    // ===== DOM =====
+    const videoEl = document.getElementById('sleepVideo');
+    const recDotEl = document.getElementById('recDot');
+    const videoStatusEl = document.getElementById('videoStatus');
+    const sessionStatusEl = document.getElementById('sessionStatus');
+    const videoErrorEl = document.getElementById('videoError');
 
-    // ОБНОВЛЕНО: очередность для 6 и 7 по твоему сообщению
-    const TURN_ORDER_BY_N = {
-      2: [1,2],
-      3: [1,2,3],
-      4: [1,4,2,3],
-      5: [1,4,2,3,5],
-      6: [1,4,5,2,3,6],        // <-- исправлено
-      7: [1,4,5,7,2,3,6],      // <-- исправлено
-      8: [1,7,5,4,8,2,3,6],
-    };
+    const startSessionBtn = document.getElementById('startSessionBtn');
+    const stopSessionBtn = document.getElementById('stopSessionBtn');
+    const motionPermBtn = document.getElementById('motionPermBtn');
+    const motionStatusEl = document.getElementById('motionStatus');
 
-    // DOM
-    const ring = document.getElementById("ring");
-    const hintTop = document.getElementById("hintTop");
-    const statusEl = document.getElementById("status");
+    const lastIntensityEl = document.getElementById('lastIntensity');
+    const thresholdLabelEl = document.getElementById('thresholdLabel');
+    const movementCountEl = document.getElementById('movementCount');
 
-    const startBtn = document.getElementById("startBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
-    const resumeBtn = document.getElementById("resumeBtn");
-    const resetBtn = document.getElementById("resetBtn");
+    const eventsListEl = document.getElementById('eventsList');
+    const episodesListEl = document.getElementById('episodesList');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
 
-    const settingsBtn = document.getElementById("settingsBtn");
-    const closeSettingsBtn = document.getElementById("closeSettingsBtn");
-    const overlay = document.getElementById("overlay");
-    const sheet = document.getElementById("sheet");
+    thresholdLabelEl.textContent = MOVEMENT_THRESHOLD.toFixed(2);
 
-    const mm = document.getElementById("mm");
-    const ss = document.getElementById("ss");
-    const minusBtn = document.getElementById("minusBtn");
-    const plusBtn = document.getElementById("plusBtn");
-    const playersRange = document.getElementById("playersRange");
-    const playersCount = document.getElementById("playersCount");
-    const namesBox = document.getElementById("namesBox");
-    const settingsNote = document.getElementById("settingsNote");
-    const quickN = document.getElementById("quickN");
+    // ===== СОСТОЯНИЕ =====
+    let mediaStream = null;
+    let mediaRecorder = null;
 
-    const slots = {
-      1: document.getElementById("slot1"),
-      2: document.getElementById("slot2"),
-      3: document.getElementById("slot3"),
-      4: document.getElementById("slot4"),
-      5: document.getElementById("slot5"),
-      6: document.getElementById("slot6"),
-      7: document.getElementById("slot7"),
-      8: document.getElementById("slot8"),
-    };
+    let sessionActive = false;
+    let sessionStartTime = null;
+    let processTimer = null;
 
-    function fillSelect(select, max){
-      select.innerHTML = "";
-      for (let i=0;i<=max;i++){
-        const opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = pad2(i);
-        select.appendChild(opt);
-      }
-    }
-    fillSelect(mm, 59);
-    fillSelect(ss, 59);
+    let lastAcceleration = null;
+    let motionEnabled = false;
 
-    const state = {
-      n: 2,
-      baseMs: 30_000,
-      times: [],
-      names: [],
-      active: -1,        // internal index [0..n-1]
-      started: false,
-      running: false,
-      paused: true,
-      lastTs: 0,
-      finished: new Set(), // set of internal indices
-    };
+    let motionEvents = [];
+    let movementMoments = [];
 
-    function getOrder(){
-      return TURN_ORDER_BY_N[state.n] || Array.from({length: state.n}, (_,i)=>i+1);
-    }
-    function indexFromPlayerNum(p){ return p - 1; }
-    function playerNumFromIndex(i){ return i + 1; }
+    let segments = []; // { index, startTime, blob }
+    let segmentIndex = 0;
 
-    function nextByCustomOrderAfterPlayer(playerNum){
-      const order = getOrder();
-      const alive = order.filter(p => !state.finished.has(indexFromPlayerNum(p)));
-      if (alive.length === 0) return -1;
+    let episodes = []; // { id, startTime, endTime, blob, lengthMs }
 
-      const idx = alive.indexOf(playerNum);
-      const nextP = alive[(idx >= 0 ? idx + 1 : 0) % alive.length];
-      return indexFromPlayerNum(nextP);
-    }
+    let episodeActive = false;
+    let episodeStartTime = null;
+    let lastMovementTime = null;
 
-    function getPickedMs(){
-      const m = parseInt(mm.value, 10);
-      const s = parseInt(ss.value, 10);
-      let ms = (m*60 + s) * 1000;
-      if (ms <= 0) ms = 30_000;
-      return ms;
-    }
-    function setPicked(ms){
-      const total = Math.round(ms / 1000);
-      mm.value = String(Math.floor(total/60));
-      ss.value = String(total%60);
-    }
+    // ===== КАМЕРА =====
+    async function startCamera() {
+      try {
+        videoErrorEl.style.display = 'none';
+        videoStatusEl.textContent = 'Запрос доступа к камере...';
 
-    function setStatusText(){
-      if (!state.started){
-        statusEl.textContent = "Готово";
-        hintTop.textContent = "⚙ Настройки → Старт → нажми игрока: время пойдёт у следующего";
-      } else if (!state.running){
-        statusEl.textContent = "Ожидание";
-        hintTop.textContent = "Нажми игрока X → пойдёт время у следующего (по кругу)";
-      } else if (state.paused){
-        statusEl.textContent = "Пауза";
-        hintTop.textContent = "Пауза";
-      } else {
-        statusEl.textContent = "Идёт";
-        hintTop.textContent = "Нажми игрока → ход к следующему (по кругу)";
-      }
-    }
-
-    function updateButtons(){
-      startBtn.disabled = state.started;
-      pauseBtn.disabled = !state.running || state.paused;
-      resumeBtn.disabled = !state.running || !state.paused;
-    }
-
-    function updateSettingsLock(){
-      const locked = state.started;
-      mm.disabled = locked;
-      ss.disabled = locked;
-      minusBtn.disabled = locked;
-      plusBtn.disabled = locked;
-      playersRange.disabled = locked;
-      [...namesBox.querySelectorAll("input")].forEach(inp => inp.disabled = locked);
-
-      settingsNote.textContent = locked
-        ? "Настройки заблокированы (раунд начат). Нажми «Сброс», чтобы снова менять."
-        : "Можно менять время/игроков/имена/раскладку. Нажми «Старт», затем нажми игрока.";
-    }
-
-    function buildQuickN(){
-      quickN.innerHTML = "";
-      for (let n=2;n<=8;n++){
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "chip";
-        b.textContent = String(n);
-        b.addEventListener("click", () => setPlayersCount(n));
-        quickN.appendChild(b);
-      }
-      setActiveQuickN();
-    }
-    function setActiveQuickN(){
-      [...quickN.querySelectorAll(".chip")].forEach(ch => {
-        ch.classList.toggle("active", ch.textContent === String(state.n));
-      });
-    }
-
-    function buildNamesEditor(){
-      namesBox.innerHTML = "";
-      for (let i=0;i<state.n;i++){
-        const row = document.createElement("div");
-        row.className = "nameRow";
-
-        const label = document.createElement("div");
-        label.className = "label";
-        label.textContent = `Игрок ${i+1}`;
-
-        const inp = document.createElement("input");
-        inp.type = "text";
-        inp.placeholder = `Имя игрока ${i+1}`;
-        inp.value = state.names[i] ?? `Игрок ${i+1}`;
-        inp.addEventListener("input", () => {
-          state.names[i] = inp.value.trim() || `Игрок ${i+1}`;
-          const nameEl = document.getElementById(`name-${i}`);
-          if (nameEl) nameEl.textContent = state.names[i];
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false
         });
 
-        row.appendChild(label);
-        row.appendChild(inp);
-        namesBox.appendChild(row);
+        videoEl.srcObject = mediaStream;
+        await videoEl.play();
+        videoStatusEl.textContent = 'Камера активна';
+      } catch (e) {
+        console.error('Ошибка камеры', e);
+        mediaStream = null;
+        videoStatusEl.textContent = 'Ошибка камеры';
+        videoErrorEl.style.display = 'block';
+        videoErrorEl.textContent = 'Не удалось получить доступ к камере: ' + e.message;
       }
     }
 
-    function makeCard(i){
-      const c = COLORS[i % COLORS.length];
-      const card = document.createElement("div");
-      card.className = "player";
-      card.dataset.i = String(i);
-      card.style.background = `linear-gradient(180deg, ${c.bg1}, ${c.bg2})`;
-
-      const inner = document.createElement("div");
-      inner.className = "inner";
-
-      const name = document.createElement("div");
-      name.className = "name";
-      name.id = `name-${i}`;
-      name.textContent = state.names[i] ?? `Игрок ${i+1}`;
-
-      const time = document.createElement("div");
-      time.className = "time";
-      time.id = `time-${i}`;
-      time.textContent = msToText(state.times[i]);
-
-      const sub = document.createElement("div");
-      sub.className = "sub";
-      sub.id = `sub-${i}`;
-      sub.textContent = "Нажми";
-
-      inner.appendChild(name);
-      inner.appendChild(time);
-      inner.appendChild(sub);
-      card.appendChild(inner);
-
-      card.addEventListener("click", () => onTap(i));
-      return card;
-    }
-
-    // Повороты:
-    // - по умолчанию: 1 normal, 2 rot180, 3 rot270, 4 rot90, 5 rot90, 6 rot270, 7 normal, 8 rot180
-    // НО:
-    // - при n=5 игрок 5 стоит справа, должен смотреть в центр => rot270
-    // - при n=8 игрок 7 должен смотреть как игрок 1 (normal)
-    function rotationForPlayer(p){
-      // специальные случаи
-      if (state.n === 5 && p === 5) return "rot270"; // <-- исправление для 5 игроков
-      if (state.n === 8 && p === 7) return "";       // <-- как 1 (normal)
-
-      if (p === 2 || p === 8 || (state.n === 7 && p === 7)) return "rot180";
-      if (p === 3 || p === 6) return "rot270";
-      if (p === 4 || p === 5) return "rot90";
-      return "";
-    }
-
-    function clearSlots(){
-      for (let p=1;p<=8;p++){
-        const s = slots[p];
-        s.style.display = "none";
-        s.innerHTML = "";
+    function stopCamera() {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
       }
-      ring.classList.remove("hasActive");
+      videoEl.srcObject = null;
+      videoStatusEl.textContent = 'Камера отключена';
     }
 
-    function applyLayoutClass(){
-      ring.classList.remove("n2","n3","n4","n5","n6","n7","n8");
-      ring.classList.add(`n${state.n}`);
-    }
+    // ===== MEDIARECORDER (как в твоём тесте) =====
+    function startRecorder() {
+      if (!mediaStream) return;
+      if (!('MediaRecorder' in window)) return;
 
-    function buildLayout(){
-      clearSlots();
-      applyLayoutClass();
+      segments = [];
+      segmentIndex = 0;
 
-      for (let p=1; p<=state.n; p++){
-        const i = p - 1;
-        const slot = slots[p];
-        const card = makeCard(i);
+      try {
+        // Важно: без mimeType, как показал твой тест
+        mediaRecorder = new MediaRecorder(mediaStream, {});
 
-        const rot = rotationForPlayer(p);
-        if (rot) card.classList.add(rot);
+        mediaRecorder.ondataavailable = e => {
+          if (e.data && e.data.size > 0 && sessionStartTime != null) {
+            const segStartTime = sessionStartTime + segmentIndex * SEGMENT_DURATION_MS;
+            segments.push({
+              index: segmentIndex,
+              startTime: segStartTime,
+              blob: e.data
+            });
+            segmentIndex++;
+          }
+        };
 
-        slot.style.display = "block";
-        slot.appendChild(card);
+        mediaRecorder.onerror = e => {
+          console.error('MediaRecorder error', e);
+        };
+
+        mediaRecorder.start(SEGMENT_DURATION_MS);
+        console.log('MediaRecorder started');
+      } catch (e) {
+        console.error('Ошибка запуска MediaRecorder', e);
+        mediaRecorder = null;
       }
-
-      setActiveQuickN();
-      renderAll();
     }
 
-    function renderAll(){
-      const cards = [...ring.querySelectorAll(".player")];
-      const hasActive = state.running && !state.paused && state.active >= 0;
-      ring.classList.toggle("hasActive", hasActive);
+    function stopRecorder() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        console.log('MediaRecorder stopped');
+      }
+      mediaRecorder = null;
+    }
 
-      cards.forEach(el => {
-        const i = parseInt(el.dataset.i, 10);
-        el.classList.toggle("active", hasActive && i === state.active);
-        el.classList.toggle("lost", state.finished.has(i));
+    // ===== ДАТЧИКИ ДВИЖЕНИЯ =====
+    async function requestMotionPermission() {
+      motionStatusEl.style.display = 'none';
+      motionStatusEl.textContent = '';
+
+      try {
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+          const res = await DeviceMotionEvent.requestPermission();
+          if (res === 'granted') {
+            window.addEventListener('devicemotion', handleMotion);
+            motionEnabled = true;
+            showMotionOk('Датчики движения разрешены.');
+          } else {
+            motionEnabled = false;
+            showMotionError('Доступ к датчикам движения отклонён.');
+          }
+        } else {
+          window.addEventListener('devicemotion', handleMotion);
+          motionEnabled = true;
+          showMotionOk('Датчики движения включены.');
+        }
+      } catch (e) {
+        motionEnabled = false;
+        console.error(e);
+        showMotionError('Ошибка при запросе доступа: ' + e.message);
+      }
+    }
+
+    function handleMotion(event) {
+      const acc = event.accelerationIncludingGravity || event.acceleration;
+      if (!acc) return;
+      const now = Date.now();
+      const ax = acc.x || 0;
+      const ay = acc.y || 0;
+      const az = acc.z || 0;
+      const intensity = Math.sqrt(ax*ax + ay*ay + az*az);
+      lastAcceleration = { ax, ay, az, intensity, time: now };
+      lastIntensityEl.textContent = intensity.toFixed(2);
+    }
+
+    function showMotionError(msg) {
+      motionStatusEl.style.display = 'block';
+      motionStatusEl.className = 'error';
+      motionStatusEl.textContent = msg;
+    }
+    function showMotionOk(msg) {
+      motionStatusEl.style.display = 'block';
+      motionStatusEl.className = 'ok';
+      motionStatusEl.textContent = msg;
+    }
+
+    // ===== СЕССИЯ =====
+    function startSession() {
+      if (sessionActive) return;
+      sessionActive = true;
+      sessionStartTime = Date.now();
+
+      motionEvents = [];
+      movementMoments = [];
+      episodes = [];
+      episodeActive = false;
+      episodeStartTime = null;
+      lastMovementTime = null;
+
+      movementCountEl.textContent = '0';
+      clearEventsListUI();
+      clearEpisodesListUI();
+      downloadAllBtn.disabled = true;
+
+      startCamera().then(() => {
+        startRecorder();
       });
 
-      for (let i=0;i<state.n;i++){
-        const tEl = document.getElementById(`time-${i}`);
-        if (tEl) tEl.textContent = msToText(state.times[i]);
+      processTimer = setInterval(processMotionData, PROCESS_INTERVAL_MS);
 
-        const sEl = document.getElementById(`sub-${i}`);
-        if (!sEl) continue;
+      recDotEl.classList.add('active');
+      sessionStatusEl.textContent = 'Сессия идёт';
+      startSessionBtn.disabled = true;
+      stopSessionBtn.disabled = false;
+    }
 
-        if (state.finished.has(i)) sEl.textContent = "Вышло";
-        else if (!state.started) sEl.textContent = "После Старт";
-        else if (!state.running) sEl.textContent = "Нажми → ход следующему";
-        else if (state.paused) sEl.textContent = "Пауза";
-        else sEl.textContent = (i === state.active) ? "Сейчас идёт" : "Нажми → ход следующему";
+    function stopSession() {
+      if (!sessionActive) return;
+      sessionActive = false;
+
+      stopCamera();
+      stopRecorder();
+      if (processTimer) {
+        clearInterval(processTimer);
+        processTimer = null;
       }
 
-      playersCount.textContent = String(state.n);
-      playersRange.value = String(state.n);
-
-      setStatusText();
-      updateButtons();
-      updateSettingsLock();
-    }
-
-    // Нажал игрока i -> ходит следующий по КАСТОМНОМУ порядку
-    function onTap(i){
-      if (!state.started) return;
-      if (state.running && state.paused) return;
-      if (state.finished.size >= state.n) return;
-      if (state.finished.has(i)) return;
-
-      const currentP = playerNumFromIndex(i);
-      const nextIndex = nextByCustomOrderAfterPlayer(currentP);
-      if (nextIndex < 0) return;
-
-      if (!state.running){
-        state.running = true;
-        state.paused = false;
-        state.lastTs = performance.now();
+      if (episodeActive && lastMovementTime) {
+        const endTime = lastMovementTime + POST_ROLL_MS;
+        createEpisodeFromSegments(episodeStartTime || sessionStartTime, endTime);
+        episodeActive = false;
+        episodeStartTime = null;
+        lastMovementTime = null;
       }
-      state.active = nextIndex;
-      renderAll();
+
+      recDotEl.classList.remove('active');
+      sessionStatusEl.textContent = 'Сессия остановлена';
+      startSessionBtn.disabled = false;
+      stopSessionBtn.disabled = true;
+
+      renderEpisodesList();
     }
 
-    function start(){
-      if (state.started) return;
+    function processMotionData() {
+      if (!sessionActive || !lastAcceleration) return;
 
-      state.baseMs = getPickedMs();
-      state.times = Array.from({length: state.n}, () => state.baseMs);
-      state.finished = new Set();
-      state.active = -1;
+      const { intensity, time } = lastAcceleration;
+      motionEvents.push({ time, intensity });
 
-      state.started = true;
-      state.running = false;
-      state.paused = true;
-      state.lastTs = 0;
+      if (intensity > MOVEMENT_THRESHOLD) {
+        if (!episodeActive) {
+          episodeActive = true;
+          episodeStartTime = time - PRE_ROLL_MS;
+          if (episodeStartTime < sessionStartTime) {
+            episodeStartTime = sessionStartTime;
+          }
+        }
+        lastMovementTime = time;
 
-      renderAll();
-    }
-
-    function pause(){
-      if (!state.running) return;
-      state.paused = true;
-      renderAll();
-    }
-
-    function resume(){
-      if (!state.running) return;
-      state.paused = false;
-      state.lastTs = performance.now();
-      renderAll();
-    }
-
-    function resetAll(){
-      state.baseMs = getPickedMs();
-      state.times = Array.from({length: state.n}, () => state.baseMs);
-      state.finished = new Set();
-      state.active = -1;
-
-      state.started = false;
-      state.running = false;
-      state.paused = true;
-      state.lastTs = 0;
-
-      buildNamesEditor();
-      buildLayout();
-      renderAll();
-    }
-
-    function setPlayersCount(n){
-      if (state.started) return;
-      state.n = Math.max(2, Math.min(8, n));
-      state.baseMs = getPickedMs();
-      state.times = Array.from({length: state.n}, () => state.baseMs);
-
-      const newNames = [];
-      for (let i=0;i<state.n;i++){
-        newNames[i] = state.names[i] ?? `Игрок ${i+1}`;
+        movementMoments.push(time);
+        movementCountEl.textContent = movementMoments.length.toString();
+        appendMovementEventToUI(time, intensity);
+      } else {
+        if (episodeActive && lastMovementTime && (time - lastMovementTime > SILENCE_TO_END_MS)) {
+          const endTime = lastMovementTime + POST_ROLL_MS;
+          createEpisodeFromSegments(episodeStartTime || sessionStartTime, endTime);
+          episodeActive = false;
+          episodeStartTime = null;
+          lastMovementTime = null;
+        }
       }
-      state.names = newNames;
-
-      buildNamesEditor();
-      buildLayout();
     }
 
-    function addPlayer(){ setPlayersCount(state.n + 1); }
-    function removePlayer(){ setPlayersCount(state.n - 1); }
+    // ===== ЭПИЗОДЫ И СЕГМЕНТЫ =====
+    function createEpisodeFromSegments(startTime, endTime) {
+      if (!segments.length || sessionStartTime == null) return;
+      if (endTime <= startTime) endTime = startTime + 5_000;
 
-    function onTimeChange(){
-      if (state.started) return;
-      state.baseMs = getPickedMs();
-      state.times = Array.from({length: state.n}, () => state.baseMs);
-      buildLayout();
-      renderAll();
+      const firstIndex = Math.max(
+        0,
+        Math.floor((startTime - sessionStartTime) / SEGMENT_DURATION_MS)
+      );
+      const lastIndex = Math.floor((endTime - sessionStartTime) / SEGMENT_DURATION_MS);
+
+      const blobsToMerge = [];
+      for (let idx = firstIndex; idx <= lastIndex; idx++) {
+        const seg = segments.find(s => s.index === idx);
+        if (seg) blobsToMerge.push(seg.blob);
+      }
+      if (!blobsToMerge.length) return;
+
+      const episodeBlob = new Blob(blobsToMerge, { type: 'video/webm' });
+      const lengthMs = endTime - startTime;
+      const id = episodes.length + 1;
+
+      episodes.push({ id, startTime, endTime, blob: episodeBlob, lengthMs });
     }
 
-    function tick(ts){
-      if (!state.running || state.paused || state.active < 0){
-        state.lastTs = ts;
-        requestAnimationFrame(tick);
+    // ===== UI ДВИЖЕНИЙ =====
+    function clearEventsListUI() {
+      eventsListEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'no-events';
+      div.textContent = 'Пока нет зафиксированных движений.';
+      eventsListEl.appendChild(div);
+    }
+
+    function appendMovementEventToUI(time, intensity) {
+      const firstChild = eventsListEl.firstElementChild;
+      if (firstChild && firstChild.classList.contains('no-events')) {
+        eventsListEl.removeChild(firstChild);
+      }
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+
+      const left = document.createElement('div');
+      const label = document.createElement('div');
+      label.className = 'event-label';
+      label.textContent = 'Движение';
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'event-time';
+      timeDiv.textContent = `${formatTime(time)} (+${formatOffset(time)})`;
+
+      left.appendChild(label);
+      left.appendChild(timeDiv);
+
+      const right = document.createElement('div');
+      right.textContent = intensity.toFixed(2);
+
+      item.appendChild(left);
+      item.appendChild(right);
+
+      eventsListEl.appendChild(item);
+      eventsListEl.scrollTop = eventsListEl.scrollHeight;
+    }
+
+    // ===== UI ЭПИЗОДОВ =====
+    function clearEpisodesListUI() {
+      episodesListEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'no-events';
+      div.textContent = 'Эпизоды ещё не сформированы.';
+      episodesListEl.appendChild(div);
+    }
+
+    function renderEpisodesList() {
+      episodesListEl.innerHTML = '';
+      if (!episodes.length) {
+        const div = document.createElement('div');
+        div.className = 'no-events';
+        div.textContent = 'Эпизоды не найдены (движения не было или запись видео не сработала).';
+        episodesListEl.appendChild(div);
+        downloadAllBtn.disabled = true;
         return;
       }
 
-      const dt = ts - (state.lastTs || ts);
-      state.lastTs = ts;
+      episodes.forEach(ep => {
+        const item = document.createElement('div');
+        item.className = 'episode-item';
 
-      if (!state.finished.has(state.active)){
-        state.times[state.active] -= dt;
+        const rowTop = document.createElement('div');
+        rowTop.className = 'episode-row';
 
-        if (state.times[state.active] <= 0){
-          state.times[state.active] = 0;
-          state.finished.add(state.active);
+        const title = document.createElement('div');
+        title.className = 'episode-title';
+        title.textContent = `Эпизод ${ep.id}`;
 
-          if (state.finished.size < state.n){
-            const currentP = playerNumFromIndex(state.active);
-            const nextIndex = nextByCustomOrderAfterPlayer(currentP);
-            state.active = nextIndex;
-          } else {
-            state.active = -1;
-            state.running = false;
-            state.paused = true;
-          }
+        const timeRange = document.createElement('div');
+        timeRange.className = 'episode-time';
+        timeRange.textContent = `${formatTime(ep.startTime)} – ${formatTime(ep.endTime)}`;
 
-          renderAll();
-        } else {
-          const tEl = document.getElementById(`time-${state.active}`);
-          if (tEl) tEl.textContent = msToText(state.times[state.active]);
-        }
-      }
+        rowTop.appendChild(title);
+        rowTop.appendChild(timeRange);
 
-      requestAnimationFrame(tick);
+        const rowBottom = document.createElement('div');
+        rowBottom.className = 'episode-row';
+
+        const lengthDiv = document.createElement('div');
+        lengthDiv.className = 'episode-length';
+        lengthDiv.textContent = `Длительность: ${formatDuration(ep.lengthMs)}`;
+
+        const btn = document.createElement('button');
+        btn.className = 'secondary small';
+        btn.textContent = 'Скачать эпизод';
+        btn.addEventListener('click', () => downloadEpisode(ep));
+
+        rowBottom.appendChild(lengthDiv);
+        rowBottom.appendChild(btn);
+
+        item.appendChild(rowTop);
+        item.appendChild(rowBottom);
+
+        episodesListEl.appendChild(item);
+      });
+
+      downloadAllBtn.disabled = false;
     }
 
-    function openSettings(){
-      overlay.classList.add("open");
-      sheet.classList.add("open");
-      sheet.setAttribute("aria-hidden", "false");
-      updateSettingsLock();
+    function downloadEpisode(ep) {
+      const url = URL.createObjectURL(ep.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const name = `sleep-episode-${formatForFilename(ep.startTime)}-${formatForFilename(ep.endTime)}.webm`;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
-    function closeSettings(){
-      overlay.classList.remove("open");
-      sheet.classList.remove("open");
-      sheet.setAttribute("aria-hidden", "true");
+
+    function downloadAllEpisodes() {
+      if (!episodes.length) return;
+      const allBlobs = episodes.map(ep => ep.blob);
+      const merged = new Blob(allBlobs, { type: 'video/webm' });
+      const url = URL.createObjectURL(merged);
+      const a = document.createElement('a');
+      const start = episodes[0].startTime;
+      const end = episodes[episodes.length - 1].endTime;
+      a.href = url;
+      a.download = `sleep-all-episodes-${formatForFilename(start)}-${formatForFilename(end)}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
 
-    // Events
-    startBtn.addEventListener("click", start);
-    pauseBtn.addEventListener("click", pause);
-    resumeBtn.addEventListener("click", resume);
-    resetBtn.addEventListener("click", resetAll);
+    // ===== ВСПОМОГАТЕЛЬНЫЕ =====
+    function formatTime(ts) {
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+    function formatOffset(ts) {
+      if (!sessionStartTime) return '0 c';
+      const diffMs = ts - sessionStartTime;
+      const diffSec = Math.floor(diffMs / 1000);
+      const mm = Math.floor(diffSec / 60);
+      const ss = diffSec % 60;
+      if (mm > 0) return `${mm} мин ${ss} с`;
+      return `${ss} с`;
+    }
+    function formatDuration(ms) {
+      const sec = Math.floor(ms / 1000);
+      const mm = Math.floor(sec / 60);
+      const ss = sec % 60;
+      if (mm > 0) return `${mm} мин ${ss} с`;
+      return `${ss} с`;
+    }
+    function formatForFilename(ts) {
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${hh}-${mm}-${ss}`;
+    }
 
-    settingsBtn.addEventListener("click", openSettings);
-    closeSettingsBtn.addEventListener("click", closeSettings);
-    overlay.addEventListener("click", closeSettings);
+    // ===== ОБРАБОТЧИКИ КНОПОК =====
+    startSessionBtn.addEventListener('click', () => startSession());
+    stopSessionBtn.addEventListener('click', () => stopSession());
+    motionPermBtn.addEventListener('click', () => requestMotionPermission());
+    downloadAllBtn.addEventListener('click', () => downloadAllEpisodes());
 
-    mm.addEventListener("change", onTimeChange);
-    ss.addEventListener("change", onTimeChange);
-
-    plusBtn.addEventListener("click", addPlayer);
-    minusBtn.addEventListener("click", removePlayer);
-    playersRange.addEventListener("input", () => setPlayersCount(parseInt(playersRange.value, 10)));
-
-    // Init
-    buildQuickN();
-    setPicked(30_000);
-    state.baseMs = getPickedMs();
-    state.times = Array.from({length: state.n}, () => state.baseMs);
-    state.names = Array.from({length: state.n}, (_, i) => `Игрок ${i+1}`);
-
-    buildNamesEditor();
-    buildLayout();
-    renderAll();
-    requestAnimationFrame(tick);
+    window.addEventListener('beforeunload', () => stopSession());
   </script>
 </body>
 </html>
