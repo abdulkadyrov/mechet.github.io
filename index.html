@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Мониторинг сна: движение + эпизоды видео (iPhone)</title>
+  <title>Мониторинг сна: движение + эпизоды видео (настройки)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <style>
     :root { color-scheme: dark; }
@@ -244,6 +244,41 @@
       color: #666680;
       text-align: center;
     }
+
+    /* Панель настроек */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .setting-item {
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .setting-label {
+      color: #c0c0d0;
+    }
+    .setting-input-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .setting-input-row input {
+      flex: 1;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: #141426;
+      color: #f5f5ff;
+      font-size: 12px;
+    }
+    .setting-suffix {
+      font-size: 10px;
+      color: #80809a;
+    }
   </style>
 </head>
 <body>
@@ -291,6 +326,8 @@
         </div>
         <div id="motionStatus" class="error" style="display:none;"></div>
       </div>
+
+      <!-- Метрики -->
       <div class="metrics">
         <div class="metric-item">
           <div class="metric-label">Интенсивность (последняя)</div>
@@ -300,7 +337,7 @@
         <div class="metric-item">
           <div class="metric-label">Порог движения</div>
           <div class="metric-value" id="thresholdLabel">0.00</div>
-          <div class="metric-sub">можно изменить в коде</div>
+          <div class="metric-sub">изменяется ниже</div>
         </div>
         <div class="metric-item">
           <div class="metric-label">Событий движения</div>
@@ -308,6 +345,39 @@
           <div class="metric-sub">за сессию</div>
         </div>
       </div>
+
+      <!-- Настройки чувствительности -->
+      <div class="settings-grid">
+        <div class="setting-item">
+          <div class="setting-label">Порог движения (g)</div>
+          <div class="setting-input-row">
+            <input type="number" step="0.1" id="inputThreshold" />
+          </div>
+          <div class="setting-suffix">Чем больше, тем менее чувствительно.</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">Мин. последовательных “хитов”</div>
+          <div class="setting-input-row">
+            <input type="number" step="1" id="inputMinHits" />
+          </div>
+          <div class="setting-suffix">Сколько раз подряд > порога (3 ≈ 0.6 сек).</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">Тишина для конца эпизода (сек)</div>
+          <div class="setting-input-row">
+            <input type="number" step="1" id="inputSilence" />
+          </div>
+          <div class="setting-suffix">После паузы эпизод закрывается.</div>
+        </div>
+      </div>
+
+      <div class="hint">
+        Изменяй настройки и смотри, как меняется чувствительность.  
+        Настройки применяются сразу к текущей сессии.
+      </div>
+
       <div class="events-list" id="eventsList">
         <div class="no-events">Пока нет зафиксированных движений.</div>
       </div>
@@ -336,16 +406,15 @@
   </footer>
 
   <script>
-    // ===== НАСТРОЙКИ =====
-    const MOVEMENT_THRESHOLD = 5.0;      // более высокий порог
-    const PROCESS_INTERVAL_MS = 200;
+    // ===== НАСТРОЙКИ ПО УМОЛЧАНИЮ =====
+    let MOVEMENT_THRESHOLD = 5.0;      // порог интенсивности
+    let PROCESS_INTERVAL_MS = 200;
     const SEGMENT_DURATION_MS = 10_000;
-    const PRE_ROLL_MS = 10_000;
-    const POST_ROLL_MS = 10_000;
-    const SILENCE_TO_END_MS = 20_000;
+    let PRE_ROLL_MS = 10_000;
+    let POST_ROLL_MS = 10_000;
+    let SILENCE_TO_END_MS = 20_000;
 
-    // анти‑шум: сколько подряд "хитов" выше порога нужно, чтобы считать это движением
-    const MIN_HITS_FOR_MOVEMENT = 3; // 3 * 200мс ≈ 0.6 сек
+    let MIN_HITS_FOR_MOVEMENT = 3;
     let overThresholdCount = 0;
 
     // ===== DOM =====
@@ -368,7 +437,18 @@
     const episodesListEl = document.getElementById('episodesList');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
 
-    thresholdLabelEl.textContent = MOVEMENT_THRESHOLD.toFixed(2);
+    const inputThreshold = document.getElementById('inputThreshold');
+    const inputMinHits = document.getElementById('inputMinHits');
+    const inputSilence = document.getElementById('inputSilence');
+
+    // инициализация значений в UI
+    function updateSettingsUI() {
+      thresholdLabelEl.textContent = MOVEMENT_THRESHOLD.toFixed(1);
+      inputThreshold.value = MOVEMENT_THRESHOLD.toFixed(1);
+      inputMinHits.value = MIN_HITS_FOR_MOVEMENT.toString();
+      inputSilence.value = Math.round(SILENCE_TO_END_MS / 1000).toString();
+    }
+    updateSettingsUI();
 
     // ===== СОСТОЯНИЕ =====
     let mediaStream = null;
@@ -800,6 +880,29 @@
       const ss = String(d.getSeconds()).padStart(2, '0');
       return `${hh}-${mm}-${ss}`;
     }
+
+    // ===== ОБРАБОТЧИКИ НАСТРОЕК =====
+    inputThreshold.addEventListener('change', () => {
+      const v = parseFloat(inputThreshold.value.replace(',', '.'));
+      if (!isNaN(v) && v > 0) {
+        MOVEMENT_THRESHOLD = v;
+        thresholdLabelEl.textContent = MOVEMENT_THRESHOLD.toFixed(1);
+      }
+    });
+
+    inputMinHits.addEventListener('change', () => {
+      const v = parseInt(inputMinHits.value, 10);
+      if (!isNaN(v) && v >= 1) {
+        MIN_HITS_FOR_MOVEMENT = v;
+      }
+    });
+
+    inputSilence.addEventListener('change', () => {
+      const v = parseInt(inputSilence.value, 10);
+      if (!isNaN(v) && v >= 1) {
+        SILENCE_TO_END_MS = v * 1000;
+      }
+    });
 
     // ===== ОБРАБОТЧИКИ КНОПОК =====
     startSessionBtn.addEventListener('click', () => startSession());
