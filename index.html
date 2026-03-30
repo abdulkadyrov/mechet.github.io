@@ -249,7 +249,7 @@
 <body>
   <header>
     <h1>Мониторинг сна (iPhone)</h1>
-    <p>Камера + движение, видеоэпизоды при движении</p>
+    <p>Камера + движение, видеоэпизоды при реальном движении</p>
   </header>
 
   <main>
@@ -273,7 +273,7 @@
         </div>
         <div class="hint">
           Поставь айфон так, чтобы камера смотрела на кровать, и подключи к зарядке.  
-          Во время сна ничего нажимать не нужно — всё сохранится в памяти страницы.
+          Во время сна ничего нажимать не нужно — всё сохраняется в памяти страницы.
         </div>
         <div id="videoError" class="error" style="display:none;"></div>
       </div>
@@ -299,7 +299,7 @@
         </div>
         <div class="metric-item">
           <div class="metric-label">Порог движения</div>
-          <div class="metric-value" id="thresholdLabel">2.00</div>
+          <div class="metric-value" id="thresholdLabel">0.00</div>
           <div class="metric-sub">можно изменить в коде</div>
         </div>
         <div class="metric-item">
@@ -337,12 +337,16 @@
 
   <script>
     // ===== НАСТРОЙКИ =====
-    const MOVEMENT_THRESHOLD = 2.0;
+    const MOVEMENT_THRESHOLD = 5.0;      // более высокий порог
     const PROCESS_INTERVAL_MS = 200;
     const SEGMENT_DURATION_MS = 10_000;
     const PRE_ROLL_MS = 10_000;
     const POST_ROLL_MS = 10_000;
     const SILENCE_TO_END_MS = 20_000;
+
+    // анти‑шум: сколько подряд "хитов" выше порога нужно, чтобы считать это движением
+    const MIN_HITS_FOR_MOVEMENT = 3; // 3 * 200мс ≈ 0.6 сек
+    let overThresholdCount = 0;
 
     // ===== DOM =====
     const videoEl = document.getElementById('sleepVideo');
@@ -421,7 +425,7 @@
       videoStatusEl.textContent = 'Камера отключена';
     }
 
-    // ===== MEDIARECORDER (как в твоём тесте) =====
+    // ===== MEDIARECORDER =====
     function startRecorder() {
       if (!mediaStream) return;
       if (!('MediaRecorder' in window)) return;
@@ -430,8 +434,7 @@
       segmentIndex = 0;
 
       try {
-        // Важно: без mimeType, как показал твой тест
-        mediaRecorder = new MediaRecorder(mediaStream, {});
+        mediaRecorder = new MediaRecorder(mediaStream, {}); // как в тесте
 
         mediaRecorder.ondataavailable = e => {
           if (e.data && e.data.size > 0 && sessionStartTime != null) {
@@ -529,6 +532,7 @@
       episodeActive = false;
       episodeStartTime = null;
       lastMovementTime = null;
+      overThresholdCount = 0;
 
       movementCountEl.textContent = '0';
       clearEventsListUI();
@@ -581,19 +585,25 @@
       motionEvents.push({ time, intensity });
 
       if (intensity > MOVEMENT_THRESHOLD) {
-        if (!episodeActive) {
-          episodeActive = true;
-          episodeStartTime = time - PRE_ROLL_MS;
-          if (episodeStartTime < sessionStartTime) {
-            episodeStartTime = sessionStartTime;
-          }
-        }
-        lastMovementTime = time;
+        overThresholdCount++;
 
-        movementMoments.push(time);
-        movementCountEl.textContent = movementMoments.length.toString();
-        appendMovementEventToUI(time, intensity);
+        if (overThresholdCount >= MIN_HITS_FOR_MOVEMENT) {
+          if (!episodeActive) {
+            episodeActive = true;
+            episodeStartTime = time - PRE_ROLL_MS;
+            if (episodeStartTime < sessionStartTime) {
+              episodeStartTime = sessionStartTime;
+            }
+          }
+          lastMovementTime = time;
+
+          movementMoments.push(time);
+          movementCountEl.textContent = movementMoments.length.toString();
+          appendMovementEventToUI(time, intensity);
+        }
       } else {
+        overThresholdCount = 0;
+
         if (episodeActive && lastMovementTime && (time - lastMovementTime > SILENCE_TO_END_MS)) {
           const endTime = lastMovementTime + POST_ROLL_MS;
           createEpisodeFromSegments(episodeStartTime || sessionStartTime, endTime);
