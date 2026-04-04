@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Измерение площади и длины (GPS + точки + прицел)</title>
+  <title>Планиметр с поиском и геолокацией</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Leaflet CSS -->
@@ -14,395 +14,767 @@
   />
 
   <style>
+    :root {
+      --accent: #1a73e8;
+      --accent-soft: rgba(26,115,232,0.15);
+      --accent-strong: rgba(26,115,232,0.35);
+      --danger: #e53935;
+      --bg-panel: rgba(24, 24, 28, 0.94);
+      --text-main: #f5f5f5;
+      --text-muted: #a6a6b3;
+    }
+
+    * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: Arial, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050510;
+      color: var(--text-main);
     }
-    #map {
-      width: 100%;
-      height: calc(100% - 150px);
+
+    #app {
       position: relative;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
     }
 
-    /* Прицел по центру карты */
+    #map {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .top-gradient {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.7),
+        rgba(0,0,0,0));
+      pointer-events: none;
+      z-index: 400;
+    }
+
+    /* Прицел */
     #mapCenterCrosshair {
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 44px;
-      height: 44px;
-      margin-left: -22px;
-      margin-top: -22px;
+      width: 46px;
+      height: 46px;
+      margin-left: -23px;
+      margin-top: -23px;
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.8);
-      box-shadow: 0 0 8px rgba(0,0,0,0.4);
-      pointer-events: none; /* не блокировать клики по карте */
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      pointer-events: none;
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 450;
+      backdrop-filter: blur(2px);
     }
     #mapCenterCrosshair::before,
     #mapCenterCrosshair::after {
       content: "";
       position: absolute;
-      background: rgba(120,120,255,0.9);
+      background: var(--accent);
+      box-shadow: 0 0 4px rgba(26,115,232,0.9);
     }
-    #mapCenterCrosshair::before {
-      width: 2px;
-      height: 18px;
-    }
-    #mapCenterCrosshair::after {
-      height: 2px;
-      width: 18px;
+    #mapCenterCrosshair::before { width: 2px; height: 18px; }
+    #mapCenterCrosshair::after  { height: 2px; width: 18px; }
+
+    /* Левая панель */
+    .left-panel {
+      position: absolute;
+      top: 110px;
+      left: 10px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    #controls {
-      height: 150px;
+    .panel-block {
+      background: var(--bg-panel);
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.45);
       padding: 8px;
-      box-sizing: border-box;
-      background: #f5f5f5;
-      border-top: 1px solid #ddd;
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .btn-group-vertical {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .mode-buttons {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    button {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: 1px solid #888;
-      background: #fff;
-      cursor: pointer;
-    }
-    button.active {
-      background: #0078ff;
-      color: #fff;
-      border-color: #0060c0;
-    }
-    button.danger {
-      background: #d9534f;
-      color: #fff;
-      border-color: #c9302c;
-    }
-    #info {
-      font-size: 14px;
-      line-height: 1.4;
-    }
-    .label {
-      font-weight: bold;
-    }
 
-    /* Панель кнопок в левом верхнем углу карты (аналог, как на скриншоте) */
-    .top-left-panel {
-      position: absolute;
-      left: 8px;
-      top: 8px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.9);
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 6px 10px;
+      font-size: 13px;
       display: flex;
       align-items: center;
-      padding: 4px;
+      gap: 6px;
+      cursor: pointer;
+      color: var(--text-main);
+      background: rgba(255,255,255,0.02);
+      outline: none;
+      transition:
+        background 0.18s ease-out,
+        transform 0.1s ease-out,
+        box-shadow 0.18s ease-out,
+        color 0.18s ease-out;
+    }
+
+    .btn-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .btn-label-main { font-weight: 500; }
+    .btn-label-sub  { font-size: 11px; color: var(--text-muted); }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.06);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .btn.active {
+      background: var(--accent-soft);
+      box-shadow: 0 6px 18px var(--accent-strong);
+    }
+    .btn.active .btn-icon {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-danger {
+      color: #ffd6d6;
+    }
+    .btn-danger .btn-icon {
+      background: rgba(229,57,53,0.18);
+      color: #ff8a80;
+    }
+    .btn-danger:hover {
+      background: rgba(229,57,53,0.18);
+    }
+
+    .btn-round {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      justify-content: center;
+      padding: 0;
+      font-size: 20px;
+      background: rgba(255,255,255,0.06);
+    }
+    .btn-round .btn-icon { display: none; }
+
+    /* Правая панель */
+    .right-panel {
+      position: absolute;
+      right: 10px;
+      top: 100px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .map-switcher {
+      display: flex;
+      flex-direction: column;
       gap: 4px;
     }
-    .top-left-panel button {
-      border-radius: 3px;
-      padding: 4px 8px;
+
+    .chip {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      background: rgba(0,0,0,0.35);
+      color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.16s ease-out;
+    }
+    .chip.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(26,115,232,0.55);
+      border-color: rgba(255,255,255,0.4);
+    }
+    .chip:hover:not(.active) {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+
+    .measurements { font-size: 12px; }
+    .measure-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+    .measure-label { color: var(--text-muted); }
+    .measure-value { font-weight: 500; }
+
+    #status {
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    /* Поиск адреса вверху (как в картах) */
+    .search-bar {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      z-index: 600;
+      width: min(540px, 92%);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      background: rgba(24,24,28,0.96);
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      padding: 4px 10px 4px 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .search-input-wrapper input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-main);
       font-size: 14px;
+    }
+    .search-input-wrapper input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-icon {
+      margin-right: 6px;
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    .search-btn {
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(26,115,232,0.6);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .search-btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    }
+
+    /* Кнопка "найти меня" (геолокация) справа */
+    .locate-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 20px;
+      z-index: 600;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-panel);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      font-size: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .locate-btn:hover {
+      background: rgba(40,40,48,0.98);
+    }
+    .locate-btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    }
+    .locate-btn.active {
+      color: var(--accent);
     }
 
     @media (max-width: 600px) {
-      #map {
-        height: calc(100% - 170px);
-      }
-      #controls {
-        height: 170px;
-      }
+      .left-panel { top: 110px; gap: 8px; }
+      .right-panel { top: auto; bottom: 10px; }
+      .search-bar { top: 8px; }
     }
   </style>
 </head>
 <body>
+<div id="app">
   <div id="map">
-    <!-- Панель в левом верхнем углу карты -->
-    <div class="top-left-panel">
-      <!-- Кнопка режима "по точкам" (чтобы не тянуться вниз) -->
-      <button id="panelModePointsBtn">Точки</button>
-      <!-- Кнопка "поставить точку по центру" -->
-      <button id="addCenterPointBtn">+</button>
-    </div>
-    <!-- Прицел в центре карты -->
+    <div class="top-gradient"></div>
     <div id="mapCenterCrosshair"></div>
   </div>
 
-  <div id="controls">
-    <div class="mode-buttons">
-      <button id="modePointsBtn" class="active">Режим: точки</button>
-      <button id="modeGpsBtn">Режим: GPS Tracer</button>
-      <button id="clearBtn" class="danger">Очистить</button>
+  <!-- Поиск адреса -->
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <span class="search-icon">🔍</span>
+      <input id="searchInput" type="text" placeholder="Поиск местоположения или адреса..." />
     </div>
-    <div id="info">
-      <div><span class="label">Режим:</span> <span id="modeLabel">По точкам (клик по карте или кнопка "+")</span></div>
-      <div><span class="label">Точек:</span> <span id="pointsCount">0</span></div>
-      <div><span class="label">Периметр:</span> <span id="perimeter">0 м</span></div>
-      <div><span class="label">Площадь:</span> <span id="area">0 м²</span></div>
-      <div id="status" style="color:#666;font-size:12px;"></div>
+    <button id="searchBtn" class="search-btn">
+      Найти
+    </button>
+  </div>
+
+  <!-- Левая панель -->
+  <div class="left-panel">
+    <div class="panel-block">
+      <div class="panel-title">Режим</div>
+      <div class="btn-group-vertical">
+        <button id="modePointsBtn" class="btn active">
+          <div class="btn-icon">⬚</div>
+          <div>
+            <div class="btn-label-main">По точкам</div>
+            <div class="btn-label-sub">Клик по карте или + в центре</div>
+          </div>
+        </button>
+        <button id="modeGpsBtn" class="btn">
+          <div class="btn-icon">📍</div>
+          <div>
+            <div class="btn-label-main">GPS Tracer</div>
+            <div class="btn-label-sub">Ходите с телефоном, трек пишется</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-block">
+      <div class="panel-title">Точки</div>
+      <div class="btn-group-vertical">
+        <button id="addCenterPointBtn" class="btn btn-round" title="Добавить точку в центр">
+          +
+        </button>
+        <button id="clearBtn" class="btn btn-danger">
+          <div class="btn-icon">🗑</div>
+          <div>
+            <div class="btn-label-main">Очистить</div>
+            <div class="btn-label-sub">Удалить все точки</div>
+          </div>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <!-- Правая панель -->
+  <div class="right-panel">
+    <div class="panel-block">
+      <div class="panel-title">Карта</div>
+      <div id="mapSwitcher" class="map-switcher">
+        <div class="chip active" data-layer="osm">OSM</div>
+        <div class="chip" data-layer="google">Google‑style</div>
+        <div class="chip" data-layer="yandex">Yandex‑style</div>
+        <div class="chip" data-layer="sat">Спутник</div>
+      </div>
+    </div>
 
-  <script>
-    // --------- ИНИЦИАЛИЗАЦИЯ КАРТЫ ----------
-    const map = L.map('map', {
-      center: [55.751244, 37.618423],
-      zoom: 17,
-      zoomControl: true
+    <div class="panel-block measurements">
+      <div class="panel-title">Измерения</div>
+      <div class="measure-row">
+        <span class="measure-label">Точек</span>
+        <span id="pointsCount" class="measure-value">0</span>
+      </div>
+      <div class="measure-row">
+        <span class="measure-label">Периметр</span>
+        <span id="perimeter" class="measure-value">0 м</span>
+      </div>
+      <div class="measure-row">
+        <span class="measure-label">Площадь</span>
+        <span id="area" class="measure-value">0 м²</span>
+      </div>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <!-- Кнопка "найти меня" -->
+  <button id="locateBtn" class="locate-btn" title="Где я?">
+    ⦿
+  </button>
+</div>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<script>
+  // ---------- КАРТА И СЛОИ ----------
+  const map = L.map('map', {
+    center: [55.751244, 37.618423],
+    zoom: 17,
+    zoomControl: false
+  });
+
+  const layerOSM = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom: 19, attribution: '&copy; OpenStreetMap' }
+  ).addTo(map);
+
+  const layerGoogleStyle = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+    { maxZoom: 19, attribution: '&copy; Carto, OpenStreetMap' }
+  );
+
+  const layerYandexStyle = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { maxZoom: 19, attribution: '&copy; Carto' }
+  );
+
+  const layerSat = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+  );
+
+  let currentBaseLayer = layerOSM;
+
+  function setBaseLayer(layerKey) {
+    map.removeLayer(currentBaseLayer);
+    switch (layerKey) {
+      case 'google': currentBaseLayer = layerGoogleStyle; break;
+      case 'yandex': currentBaseLayer = layerYandexStyle; break;
+      case 'sat':    currentBaseLayer = layerSat; break;
+      default:       currentBaseLayer = layerOSM;
+    }
+    currentBaseLayer.addTo(map);
+  }
+
+  const mapSwitcher = document.getElementById('mapSwitcher');
+  const chips = mapSwitcher.querySelectorAll('.chip');
+  mapSwitcher.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const key = chip.dataset.layer;
+    chips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    setBaseLayer(key);
+  });
+
+  // ---------- СОСТОЯНИЕ ----------
+  const Mode = { POINTS: 'points', GPS: 'gps' };
+  let currentMode = Mode.POINTS;
+  let points = [];
+  let polyline = null;
+  let polygon = null;
+  let gpsWatchId = null;
+  let autoCenter = true;
+  let userMarker = null;
+
+  const modePointsBtn      = document.getElementById('modePointsBtn');
+  const modeGpsBtn         = document.getElementById('modeGpsBtn');
+  const addCenterPointBtn  = document.getElementById('addCenterPointBtn');
+  const clearBtn           = document.getElementById('clearBtn');
+  const pointsCountLabel   = document.getElementById('pointsCount');
+  const perimeterLabel     = document.getElementById('perimeter');
+  const areaLabel          = document.getElementById('area');
+  const statusLabel        = document.getElementById('status');
+  const searchInput        = document.getElementById('searchInput');
+  const searchBtn          = document.getElementById('searchBtn');
+  const locateBtn          = document.getElementById('locateBtn');
+
+  // ---------- Измерения ----------
+  function computePerimeter(latlngs) {
+    if (latlngs.length < 2) return 0;
+    let dist = 0;
+    for (let i = 1; i < latlngs.length; i++) {
+      dist += latlngs[i - 1].distanceTo(latlngs[i]);
+    }
+    if (latlngs.length > 2) {
+      dist += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+    }
+    return dist;
+  }
+
+  function computeArea(latlngs) {
+    if (latlngs.length < 3) return 0;
+    const R = 6378137;
+    const refLat = latlngs[0].lat * Math.PI / 180;
+    const refLng = latlngs[0].lng * Math.PI / 180;
+
+    const xy = latlngs.map(p => {
+      const lat = p.lat * Math.PI / 180;
+      const lng = p.lng * Math.PI / 180;
+      const x = (lng - refLng) * Math.cos((lat + refLat) / 2) * R;
+      const y = (lat - refLat) * R;
+      return { x, y };
     });
 
-    const osm = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }
-    ).addTo(map);
+    let area = 0;
+    for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) {
+      area += (xy[j].x + xy[i].x) * (xy[j].y - xy[i].y);
+    }
+    return Math.abs(area) / 2;
+  }
 
-    const esriSat = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri'
-      }
-    );
+  function formatDistance(meters) {
+    if (meters < 1000) return meters.toFixed(1) + ' м';
+    return (meters / 1000).toFixed(2) + ' км';
+  }
 
-    L.control.layers(
-      { 'OSM карта': osm, 'Спутник Esri': esriSat },
-      null,
-      { position: 'topleft' }
-    ).addTo(map);
+  function formatArea(m2) {
+    if (m2 < 1000000) return m2.toFixed(1) + ' м²';
+    return (m2 / 1000000).toFixed(3) + ' км²';
+  }
 
-    // --------- СОСТОЯНИЕ ----------
-    const Mode = {
-      POINTS: 'points',
-      GPS: 'gps'
-    };
+  function updateMeasurements() {
+    const per = computePerimeter(points);
+    const ar = computeArea(points);
+    pointsCountLabel.textContent = points.length.toString();
+    perimeterLabel.textContent = formatDistance(per);
+    areaLabel.textContent = formatArea(ar);
+  }
 
-    let currentMode = Mode.POINTS;
-    let points = [];
-    let polyline = null;
-    let polygon = null;
-    let gpsWatchId = null;
-    let autoCenter = true;
+  function redrawShapes() {
+    if (polyline) { map.removeLayer(polyline); polyline = null; }
+    if (polygon)  { map.removeLayer(polygon);  polygon  = null; }
 
-    const modePointsBtn = document.getElementById('modePointsBtn');
-    const modeGpsBtn = document.getElementById('modeGpsBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const modeLabel = document.getElementById('modeLabel');
-    const pointsCountLabel = document.getElementById('pointsCount');
-    const perimeterLabel = document.getElementById('perimeter');
-    const areaLabel = document.getElementById('area');
-    const statusLabel = document.getElementById('status');
-
-    const panelModePointsBtn = document.getElementById('panelModePointsBtn');
-    const addCenterPointBtn = document.getElementById('addCenterPointBtn');
-
-    // --------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
-    function computePerimeter(latlngs) {
-      if (latlngs.length < 2) return 0;
-      let dist = 0;
-      for (let i = 1; i < latlngs.length; i++) {
-        dist += latlngs[i - 1].distanceTo(latlngs[i]);
-      }
-      if (latlngs.length > 2) {
-        dist += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
-      }
-      return dist;
+    if (points.length > 1) {
+      polyline = L.polyline(points, {
+        color: '#ffb300',
+        weight: 3
+      }).addTo(map);
     }
 
-    function computeArea(latlngs) {
-      if (latlngs.length < 3) return 0;
-      const R = 6378137;
-      const refLat = latlngs[0].lat * Math.PI / 180;
-      const refLng = latlngs[0].lng * Math.PI / 180;
+    if (points.length >= 3) {
+      polygon = L.polygon(points, {
+        color: '#ff6d00',
+        fillColor: '#ffab40',
+        fillOpacity: 0.35,
+        weight: 2
+      }).addTo(map);
+    }
 
-      const xy = latlngs.map(p => {
-        const lat = p.lat * Math.PI / 180;
-        const lng = p.lng * Math.PI / 180;
-        const x = (lng - refLng) * Math.cos((lat + refLat) / 2) * R;
-        const y = (lat - refLat) * R;
-        return { x, y };
+    updateMeasurements();
+  }
+
+  function clearAll() {
+    points = [];
+    redrawShapes();
+    statusLabel.textContent = '';
+  }
+
+  function setMode(mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+
+    if (currentMode === Mode.POINTS) {
+      modePointsBtn.classList.add('active');
+      modeGpsBtn.classList.remove('active');
+      stopGps();
+      statusLabel.textContent = 'Режим точек: ставьте точки кликом или кнопкой "+".';
+    } else {
+      modeGpsBtn.classList.add('active');
+      modePointsBtn.classList.remove('active');
+      startGps();
+    }
+  }
+
+  // ---------- Режим точек ----------
+  map.on('click', function (e) {
+    if (currentMode !== Mode.POINTS) return;
+    points.push(e.latlng);
+    redrawShapes();
+  });
+
+  function addPointAtMapCenter() {
+    if (currentMode !== Mode.POINTS) setMode(Mode.POINTS);
+    const center = map.getCenter();
+    points.push(center);
+    redrawShapes();
+    addCenterPointBtn.style.transform = 'scale(1.08)';
+    setTimeout(() => { addCenterPointBtn.style.transform = ''; }, 120);
+  }
+
+  addCenterPointBtn.addEventListener('click', addPointAtMapCenter);
+
+  // ---------- GPS Tracer ----------
+  function startGps() {
+    if (!navigator.geolocation) {
+      statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+      return;
+    }
+
+    statusLabel.textContent = 'Запрашиваем доступ к геолокации...';
+
+    gpsWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        const latlng = L.latLng(lat, lng);
+
+        points.push(latlng);
+        redrawShapes();
+
+        statusLabel.textContent =
+          'GPS активен. Точность: ~' + Math.round(accuracy) + ' м.';
+
+        if (autoCenter) {
+          map.setView(latlng, map.getZoom() < 17 ? 17 : map.getZoom());
+        }
+      },
+      (err) => {
+        statusLabel.textContent = 'Ошибка GPS: ' + err.message;
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
+  }
+
+  function stopGps() {
+    if (gpsWatchId !== null) {
+      navigator.geolocation.clearWatch(gpsWatchId);
+      gpsWatchId = null;
+      statusLabel.textContent = 'GPS выключен.';
+    }
+  }
+
+  // ---------- Поиск адреса ----------
+  async function searchAddress() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    statusLabel.textContent = 'Идёт поиск...';
+
+    try {
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('q', query);
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('limit', '1');
+      url.searchParams.set('addressdetails', '1');
+
+      const resp = await fetch(url.toString(), {
+        headers: {
+          'Accept-Language': 'ru',
+          'User-Agent': 'PlanimeterExample/1.0 (educational)'
+        }
       });
 
-      let area = 0;
-      for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) {
-        area += (xy[j].x + xy[i].x) * (xy[j].y - xy[i].y);
-      }
-      return Math.abs(area) / 2;
-    }
+      if (!resp.ok) throw new Error('Ошибка сети: ' + resp.status);
+      const data = await resp.json();
 
-    function formatDistance(meters) {
-      if (meters < 1000) return meters.toFixed(1) + ' м';
-      return (meters / 1000).toFixed(2) + ' км';
-    }
-
-    function formatArea(m2) {
-      if (m2 < 1000000) return m2.toFixed(1) + ' м²';
-      return (m2 / 1000000).toFixed(3) + ' км²';
-    }
-
-    function updateMeasurements() {
-      const per = computePerimeter(points);
-      const ar = computeArea(points);
-      pointsCountLabel.textContent = points.length.toString();
-      perimeterLabel.textContent = formatDistance(per);
-      areaLabel.textContent = formatArea(ar);
-    }
-
-    function redrawShapes() {
-      if (polyline) {
-        map.removeLayer(polyline);
-        polyline = null;
-      }
-      if (polygon) {
-        map.removeLayer(polygon);
-        polygon = null;
-      }
-
-      if (points.length > 1) {
-        polyline = L.polyline(points, {
-          color: 'orange',
-          weight: 3
-        }).addTo(map);
-      }
-
-      if (points.length >= 3) {
-        polygon = L.polygon(points, {
-          color: 'red',
-          fillColor: 'yellow',
-          fillOpacity: 0.3,
-          weight: 2
-        }).addTo(map);
-      }
-
-      updateMeasurements();
-    }
-
-    function clearAll() {
-      points = [];
-      redrawShapes();
-      statusLabel.textContent = '';
-    }
-
-    function setMode(mode) {
-      if (mode === currentMode) return;
-      currentMode = mode;
-
-      if (currentMode === Mode.POINTS) {
-        modePointsBtn.classList.add('active');
-        modeGpsBtn.classList.remove('active');
-        modeLabel.textContent = 'По точкам (клик по карте или кнопка "+")';
-        stopGps();
-      } else {
-        modeGpsBtn.classList.add('active');
-        modePointsBtn.classList.remove('active');
-        modeLabel.textContent = 'GPS Tracer (движение с устройством)';
-        startGps();
-      }
-    }
-
-    // --------- РЕЖИМ ПО ТОЧКАМ (клик по карте) ----------
-    map.on('click', function (e) {
-      if (currentMode !== Mode.POINTS) return;
-      points.push(e.latlng);
-      redrawShapes();
-    });
-
-    // --------- ДОБАВИТЬ ТОЧКУ В ЦЕНТР КАРТЫ ----------
-    function addPointAtMapCenter() {
-      if (currentMode !== Mode.POINTS) {
-        // автоматически переключаемся в режим точек
-        setMode(Mode.POINTS);
-      }
-      const center = map.getCenter();
-      points.push(center);
-      redrawShapes();
-    }
-
-    addCenterPointBtn.addEventListener('click', addPointAtMapCenter);
-
-    // Дублирующая кнопка "Точки" в панели сверху
-    panelModePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
-
-    // --------- GPS TRACER ----------
-    function startGps() {
-      if (!navigator.geolocation) {
-        statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+      if (!data.length) {
+        statusLabel.textContent = 'Адрес не найден.';
         return;
       }
 
-      statusLabel.textContent = 'Запрашиваем доступ к геолокации...';
+      const result = data[0]; // самый релевантный
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
 
-      // можно не очищать, если хотите совмещать руту и уже поставленные точки
-      // points = [];
-      // redrawShapes();
+      map.setView([lat, lon], 18);
+      statusLabel.textContent = 'Найдено: ' + (result.display_name || 'место');
 
-      gpsWatchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const accuracy = pos.coords.accuracy;
+    } catch (err) {
+      console.error(err);
+      statusLabel.textContent = 'Ошибка поиска: ' + err.message;
+    }
+  }
 
-          const latlng = L.latLng(lat, lng);
-          points.push(latlng);
-          redrawShapes();
+  searchBtn.addEventListener('click', searchAddress);
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') searchAddress();
+  });
 
-          statusLabel.textContent =
-            'GPS активен. Точность: ~' + Math.round(accuracy) + ' м.';
-
-          if (autoCenter) {
-            map.setView(latlng, map.getZoom() < 17 ? 17 : map.getZoom());
-          }
-        },
-        (err) => {
-          statusLabel.textContent = 'Ошибка GPS: ' + err.message;
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 5000,
-          timeout: 20000
-        }
-      );
+  // ---------- Кнопка "найти меня" (однократная геолокация) ----------
+  function locateMe() {
+    if (!navigator.geolocation) {
+      statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+      return;
     }
 
-    function stopGps() {
-      if (gpsWatchId !== null) {
-        navigator.geolocation.clearWatch(gpsWatchId);
-        gpsWatchId = null;
-        statusLabel.textContent = 'GPS выключен.';
-      }
-    }
+    statusLabel.textContent = 'Определяем местоположение...';
+    locateBtn.classList.add('active');
 
-    // --------- КНОПКИ ВНИЗУ ----------
-    modePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
-    modeGpsBtn.addEventListener('click', () => setMode(Mode.GPS));
-    clearBtn.addEventListener('click', clearAll);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        const latlng = L.latLng(lat, lng);
 
-    map.on('movestart', () => {
-      autoCenter = false;
-    });
-  </script>
+        map.setView(latlng, 18);
+
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.circleMarker(latlng, {
+          radius: 8,
+          color: '#1a73e8',
+          fillColor: '#1a73e8',
+          fillOpacity: 0.8
+        }).addTo(map);
+
+        statusLabel.textContent =
+          'Вы здесь (точность ~' + Math.round(accuracy) + ' м).';
+        setTimeout(() => locateBtn.classList.remove('active'), 500);
+      },
+      (err) => {
+        statusLabel.textContent = 'Ошибка геолокации: ' + err.message;
+        locateBtn.classList.remove('active');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  locateBtn.addEventListener('click', locateMe);
+
+  // ---------- КНОПКИ режимов/очистки ----------
+  modePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
+  modeGpsBtn.addEventListener('click', () => setMode(Mode.GPS));
+  clearBtn.addEventListener('click', clearAll);
+
+  map.on('movestart', () => {
+    autoCenter = false;
+  });
+</script>
 </body>
 </html>
