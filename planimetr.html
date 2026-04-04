@@ -19,7 +19,7 @@
       --accent-soft: rgba(26,115,232,0.15);
       --accent-strong: rgba(26,115,232,0.35);
       --danger: #e53935;
-      --bg-panel: rgba(24, 24, 28, 0.94);
+      --bg-panel: rgba(24,24,28,0.94);
       --text-main: #f5f5f5;
       --text-muted: #a6a6b3;
     }
@@ -61,7 +61,6 @@
       z-index: 400;
     }
 
-    /* Прицел */
     #mapCenterCrosshair {
       position: absolute;
       left: 50%;
@@ -94,16 +93,17 @@
     .left-panel {
       position: absolute;
       top: 110px;
-      left: 10px;
+      left: 8px;
       z-index: 500;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      max-width: 260px;
     }
 
     .panel-block {
       background: var(--bg-panel);
-      border-radius: 18px;
+      border-radius: 16px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.45);
       padding: 8px;
       backdrop-filter: blur(14px);
@@ -115,7 +115,7 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .btn-group-vertical {
@@ -136,11 +136,10 @@
       color: var(--text-main);
       background: rgba(255,255,255,0.02);
       outline: none;
-      transition:
-        background 0.18s ease-out,
-        transform 0.1s ease-out,
-        box-shadow 0.18s ease-out,
-        color 0.18s ease-out;
+      transition: background 0.18s ease-out,
+                  transform 0.1s ease-out,
+                  box-shadow 0.18s ease-out,
+                  color 0.18s ease-out;
     }
 
     .btn-icon {
@@ -152,6 +151,7 @@
       justify-content: center;
       font-size: 15px;
       background: rgba(255,255,255,0.05);
+      flex-shrink: 0;
     }
 
     .btn-label-main { font-weight: 500; }
@@ -182,13 +182,10 @@
       background: rgba(229,57,53,0.18);
       color: #ff8a80;
     }
-    .btn-danger:hover {
-      background: rgba(229,57,53,0.18);
-    }
 
     .btn-round {
-      width: 42px;
-      height: 42px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       justify-content: center;
       padding: 0;
@@ -200,12 +197,13 @@
     /* Правая панель */
     .right-panel {
       position: absolute;
-      right: 10px;
-      top: 100px;
+      right: 8px;
+      top: 105px;
       z-index: 500;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      max-width: 230px;
     }
 
     .map-switcher {
@@ -230,10 +228,6 @@
       box-shadow: 0 4px 12px rgba(26,115,232,0.55);
       border-color: rgba(255,255,255,0.4);
     }
-    .chip:hover:not(.active) {
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-    }
 
     .measurements { font-size: 12px; }
     .measure-row {
@@ -250,14 +244,14 @@
       color: var(--text-muted);
     }
 
-    /* Поиск адреса вверху (как в картах) */
+    /* Поиск */
     .search-bar {
       position: absolute;
       left: 50%;
-      top: 10px;
+      top: 8px;
       transform: translateX(-50%);
       z-index: 600;
-      width: min(540px, 92%);
+      width: min(520px, 92%);
       display: flex;
       gap: 6px;
       align-items: center;
@@ -283,6 +277,7 @@
       color: var(--text-main);
       font-size: 14px;
     }
+
     .search-input-wrapper input::placeholder {
       color: var(--text-muted);
     }
@@ -306,12 +301,8 @@
       align-items: center;
       gap: 4px;
     }
-    .search-btn:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.9);
-    }
 
-    /* Кнопка "найти меня" (геолокация) справа */
+    /* Кнопка "где я" */
     .locate-btn {
       position: absolute;
       right: 10px;
@@ -331,21 +322,58 @@
       font-size: 20px;
       border: 1px solid rgba(255,255,255,0.08);
     }
-    .locate-btn:hover {
-      background: rgba(40,40,48,0.98);
+
+    /* Кнопка скрытия UI */
+    .toggle-ui-btn {
+      position: absolute;
+      left: 10px;
+      bottom: 20px;
+      z-index: 600;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-panel);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      font-size: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    .locate-btn:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.9);
+
+    .ui-hidden .left-panel,
+    .ui-hidden .right-panel,
+    .ui-hidden .search-bar {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out;
     }
-    .locate-btn.active {
-      color: var(--accent);
+
+    .left-panel,
+    .right-panel,
+    .search-bar {
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out;
     }
 
     @media (max-width: 600px) {
-      .left-panel { top: 110px; gap: 8px; }
-      .right-panel { top: auto; bottom: 10px; }
-      .search-bar { top: 8px; }
+      .left-panel {
+        top: 120px;
+        max-width: 220px;
+      }
+      .right-panel {
+        top: auto;
+        bottom: 80px; /* чтобы не перекрывать центр и кнопки */
+      }
+      .panel-block {
+        padding: 6px;
+      }
+      .btn-label-sub {
+        display: none; /* меньше текста на маленьком экране */
+      }
     }
   </style>
 </head>
@@ -356,15 +384,13 @@
     <div id="mapCenterCrosshair"></div>
   </div>
 
-  <!-- Поиск адреса -->
+  <!-- Поиск -->
   <div class="search-bar">
     <div class="search-input-wrapper">
       <span class="search-icon">🔍</span>
       <input id="searchInput" type="text" placeholder="Поиск местоположения или адреса..." />
     </div>
-    <button id="searchBtn" class="search-btn">
-      Найти
-    </button>
+    <button id="searchBtn" class="search-btn">Найти</button>
   </div>
 
   <!-- Левая панель -->
@@ -376,14 +402,14 @@
           <div class="btn-icon">⬚</div>
           <div>
             <div class="btn-label-main">По точкам</div>
-            <div class="btn-label-sub">Клик по карте или + в центре</div>
+            <div class="btn-label-sub">Клик или + в центре</div>
           </div>
         </button>
         <button id="modeGpsBtn" class="btn">
           <div class="btn-icon">📍</div>
           <div>
             <div class="btn-label-main">GPS Tracer</div>
-            <div class="btn-label-sub">Ходите с телефоном, трек пишется</div>
+            <div class="btn-label-sub">Ходите с телефоном</div>
           </div>
         </button>
       </div>
@@ -436,13 +462,14 @@
     </div>
   </div>
 
-  <!-- Кнопка "найти меня" -->
-  <button id="locateBtn" class="locate-btn" title="Где я?">
-    ⦿
-  </button>
+  <!-- Кнопка "где я" -->
+  <button id="locateBtn" class="locate-btn" title="Где я?">⦿</button>
+
+  <!-- Кнопка показать/скрыть UI -->
+  <button id="toggleUiBtn" class="toggle-ui-btn" title="Скрыть/показать панели">👁</button>
 </div>
 
-<!-- Leaflet JS -->
+<!-- Leaflet -->
 <script
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -450,11 +477,12 @@
 ></script>
 
 <script>
-  // ---------- КАРТА И СЛОИ ----------
+  // --- карта и слои ---
   const map = L.map('map', {
     center: [55.751244, 37.618423],
     zoom: 17,
-    zoomControl: false
+    zoomControl: false,
+    maxZoom: 19          // ограничиваем максимум
   });
 
   const layerOSM = L.tileLayer(
@@ -474,7 +502,10 @@
 
   const layerSat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+    {
+      maxZoom: 19,                // тоже ограничиваем
+      attribution: 'Tiles &copy; Esri'
+    }
   );
 
   let currentBaseLayer = layerOSM;
@@ -490,18 +521,16 @@
     currentBaseLayer.addTo(map);
   }
 
-  const mapSwitcher = document.getElementById('mapSwitcher');
-  const chips = mapSwitcher.querySelectorAll('.chip');
-  mapSwitcher.addEventListener('click', (e) => {
+  const chips = document.querySelectorAll('.chip');
+  document.getElementById('mapSwitcher').addEventListener('click', e => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
-    const key = chip.dataset.layer;
     chips.forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    setBaseLayer(key);
+    setBaseLayer(chip.dataset.layer);
   });
 
-  // ---------- СОСТОЯНИЕ ----------
+  // --- состояние ---
   const Mode = { POINTS: 'points', GPS: 'gps' };
   let currentMode = Mode.POINTS;
   let points = [];
@@ -510,30 +539,29 @@
   let gpsWatchId = null;
   let autoCenter = true;
   let userMarker = null;
+  let uiHidden = false;
 
-  const modePointsBtn      = document.getElementById('modePointsBtn');
-  const modeGpsBtn         = document.getElementById('modeGpsBtn');
-  const addCenterPointBtn  = document.getElementById('addCenterPointBtn');
-  const clearBtn           = document.getElementById('clearBtn');
-  const pointsCountLabel   = document.getElementById('pointsCount');
-  const perimeterLabel     = document.getElementById('perimeter');
-  const areaLabel          = document.getElementById('area');
-  const statusLabel        = document.getElementById('status');
-  const searchInput        = document.getElementById('searchInput');
-  const searchBtn          = document.getElementById('searchBtn');
-  const locateBtn          = document.getElementById('locateBtn');
+  const modePointsBtn     = document.getElementById('modePointsBtn');
+  const modeGpsBtn        = document.getElementById('modeGpsBtn');
+  const addCenterPointBtn = document.getElementById('addCenterPointBtn');
+  const clearBtn          = document.getElementById('clearBtn');
+  const pointsCountLabel  = document.getElementById('pointsCount');
+  const perimeterLabel    = document.getElementById('perimeter');
+  const areaLabel         = document.getElementById('area');
+  const statusLabel       = document.getElementById('status');
+  const searchInput       = document.getElementById('searchInput');
+  const searchBtn         = document.getElementById('searchBtn');
+  const locateBtn         = document.getElementById('locateBtn');
+  const toggleUiBtn       = document.getElementById('toggleUiBtn');
+  const appRoot           = document.getElementById('app');
 
-  // ---------- Измерения ----------
+  // --- измерения ---
   function computePerimeter(latlngs) {
     if (latlngs.length < 2) return 0;
-    let dist = 0;
-    for (let i = 1; i < latlngs.length; i++) {
-      dist += latlngs[i - 1].distanceTo(latlngs[i]);
-    }
-    if (latlngs.length > 2) {
-      dist += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
-    }
-    return dist;
+    let d = 0;
+    for (let i = 1; i < latlngs.length; i++) d += latlngs[i - 1].distanceTo(latlngs[i]);
+    if (latlngs.length > 2) d += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+    return d;
   }
 
   function computeArea(latlngs) {
@@ -541,7 +569,6 @@
     const R = 6378137;
     const refLat = latlngs[0].lat * Math.PI / 180;
     const refLng = latlngs[0].lng * Math.PI / 180;
-
     const xy = latlngs.map(p => {
       const lat = p.lat * Math.PI / 180;
       const lng = p.lng * Math.PI / 180;
@@ -549,30 +576,20 @@
       const y = (lat - refLat) * R;
       return { x, y };
     });
-
-    let area = 0;
+    let a = 0;
     for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) {
-      area += (xy[j].x + xy[i].x) * (xy[j].y - xy[i].y);
+      a += (xy[j].x + xy[i].x) * (xy[j].y - xy[i].y);
     }
-    return Math.abs(area) / 2;
+    return Math.abs(a) / 2;
   }
 
-  function formatDistance(meters) {
-    if (meters < 1000) return meters.toFixed(1) + ' м';
-    return (meters / 1000).toFixed(2) + ' км';
-  }
-
-  function formatArea(m2) {
-    if (m2 < 1000000) return m2.toFixed(1) + ' м²';
-    return (m2 / 1000000).toFixed(3) + ' км²';
-  }
+  const fmtDist = m => m < 1000 ? m.toFixed(1) + ' м' : (m/1000).toFixed(2) + ' км';
+  const fmtArea = s => s < 1e6 ? s.toFixed(1) + ' м²' : (s/1e6).toFixed(3) + ' км²';
 
   function updateMeasurements() {
-    const per = computePerimeter(points);
-    const ar = computeArea(points);
-    pointsCountLabel.textContent = points.length.toString();
-    perimeterLabel.textContent = formatDistance(per);
-    areaLabel.textContent = formatArea(ar);
+    pointsCountLabel.textContent = points.length;
+    perimeterLabel.textContent   = fmtDist(computePerimeter(points));
+    areaLabel.textContent        = fmtArea(computeArea(points));
   }
 
   function redrawShapes() {
@@ -580,21 +597,13 @@
     if (polygon)  { map.removeLayer(polygon);  polygon  = null; }
 
     if (points.length > 1) {
-      polyline = L.polyline(points, {
-        color: '#ffb300',
-        weight: 3
-      }).addTo(map);
+      polyline = L.polyline(points, { color:'#ffb300', weight:3 }).addTo(map);
     }
-
     if (points.length >= 3) {
       polygon = L.polygon(points, {
-        color: '#ff6d00',
-        fillColor: '#ffab40',
-        fillOpacity: 0.35,
-        weight: 2
+        color:'#ff6d00', fillColor:'#ffab40', fillOpacity:0.35, weight:2
       }).addTo(map);
     }
-
     updateMeasurements();
   }
 
@@ -607,12 +616,11 @@
   function setMode(mode) {
     if (mode === currentMode) return;
     currentMode = mode;
-
-    if (currentMode === Mode.POINTS) {
+    if (mode === Mode.POINTS) {
       modePointsBtn.classList.add('active');
       modeGpsBtn.classList.remove('active');
       stopGps();
-      statusLabel.textContent = 'Режим точек: ставьте точки кликом или кнопкой "+".';
+      statusLabel.textContent = 'Режим точек.';
     } else {
       modeGpsBtn.classList.add('active');
       modePointsBtn.classList.remove('active');
@@ -620,8 +628,8 @@
     }
   }
 
-  // ---------- Режим точек ----------
-  map.on('click', function (e) {
+  // --- точки ---
+  map.on('click', e => {
     if (currentMode !== Mode.POINTS) return;
     points.push(e.latlng);
     redrawShapes();
@@ -629,152 +637,121 @@
 
   function addPointAtMapCenter() {
     if (currentMode !== Mode.POINTS) setMode(Mode.POINTS);
-    const center = map.getCenter();
-    points.push(center);
+    points.push(map.getCenter());
     redrawShapes();
     addCenterPointBtn.style.transform = 'scale(1.08)';
-    setTimeout(() => { addCenterPointBtn.style.transform = ''; }, 120);
+    setTimeout(() => addCenterPointBtn.style.transform = '', 120);
   }
-
   addCenterPointBtn.addEventListener('click', addPointAtMapCenter);
 
-  // ---------- GPS Tracer ----------
+  // --- GPS tracer ---
   function startGps() {
     if (!navigator.geolocation) {
-      statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+      statusLabel.textContent = 'Геолокация не поддерживается.';
       return;
     }
-
-    statusLabel.textContent = 'Запрашиваем доступ к геолокации...';
-
+    statusLabel.textContent = 'GPS: запрос разрешения...';
     gpsWatchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy;
-        const latlng = L.latLng(lat, lng);
-
+      pos => {
+        const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
         points.push(latlng);
         redrawShapes();
-
-        statusLabel.textContent =
-          'GPS активен. Точность: ~' + Math.round(accuracy) + ' м.';
-
-        if (autoCenter) {
-          map.setView(latlng, map.getZoom() < 17 ? 17 : map.getZoom());
-        }
+        statusLabel.textContent = 'GPS активен. Точность ~' + Math.round(pos.coords.accuracy) + ' м.';
+        if (autoCenter) map.setView(latlng, Math.max(map.getZoom(), 17));
       },
-      (err) => {
-        statusLabel.textContent = 'Ошибка GPS: ' + err.message;
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      err => { statusLabel.textContent = 'Ошибка GPS: ' + err.message; },
+      { enableHighAccuracy:true, maximumAge:5000, timeout:20000 }
     );
   }
 
   function stopGps() {
-    if (gpsWatchId !== null) {
+    if (gpsWatchId != null) {
       navigator.geolocation.clearWatch(gpsWatchId);
       gpsWatchId = null;
       statusLabel.textContent = 'GPS выключен.';
     }
   }
 
-  // ---------- Поиск адреса ----------
+  // --- поиск адреса ---
   async function searchAddress() {
-    const query = searchInput.value.trim();
-    if (!query) return;
-
+    const q = searchInput.value.trim();
+    if (!q) return;
     statusLabel.textContent = 'Идёт поиск...';
-
     try {
       const url = new URL('https://nominatim.openstreetmap.org/search');
-      url.searchParams.set('q', query);
+      url.searchParams.set('q', q);
       url.searchParams.set('format', 'json');
       url.searchParams.set('limit', '1');
       url.searchParams.set('addressdetails', '1');
-
       const resp = await fetch(url.toString(), {
         headers: {
           'Accept-Language': 'ru',
-          'User-Agent': 'PlanimeterExample/1.0 (educational)'
+          'User-Agent': 'PlanimeterExample/1.0'
         }
       });
-
-      if (!resp.ok) throw new Error('Ошибка сети: ' + resp.status);
+      if (!resp.ok) throw new Error(resp.status);
       const data = await resp.json();
-
       if (!data.length) {
         statusLabel.textContent = 'Адрес не найден.';
         return;
       }
-
-      const result = data[0]; // самый релевантный
-      const lat = parseFloat(result.lat);
-      const lon = parseFloat(result.lon);
-
-      map.setView([lat, lon], 18);
-      statusLabel.textContent = 'Найдено: ' + (result.display_name || 'место');
-
-    } catch (err) {
-      console.error(err);
-      statusLabel.textContent = 'Ошибка поиска: ' + err.message;
+      const r = data[0];
+      map.setView([parseFloat(r.lat), parseFloat(r.lon)], 18);
+      statusLabel.textContent = 'Найдено: ' + (r.display_name || 'место');
+    } catch (e) {
+      statusLabel.textContent = 'Ошибка поиска.';
+      console.error(e);
     }
   }
-
   searchBtn.addEventListener('click', searchAddress);
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') searchAddress();
-  });
+  searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchAddress(); });
 
-  // ---------- Кнопка "найти меня" (однократная геолокация) ----------
+  // --- кнопка "где я" ---
   function locateMe() {
     if (!navigator.geolocation) {
-      statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+      statusLabel.textContent = 'Геолокация не поддерживается.';
       return;
     }
-
-    statusLabel.textContent = 'Определяем местоположение...';
     locateBtn.classList.add('active');
-
+    statusLabel.textContent = 'Определяем местоположение...';
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy;
-        const latlng = L.latLng(lat, lng);
-
+      pos => {
+        const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
         map.setView(latlng, 18);
-
         if (userMarker) map.removeLayer(userMarker);
         userMarker = L.circleMarker(latlng, {
-          radius: 8,
-          color: '#1a73e8',
-          fillColor: '#1a73e8',
-          fillOpacity: 0.8
+          radius: 8, color:'#1a73e8', fillColor:'#1a73e8', fillOpacity:0.8
         }).addTo(map);
-
-        statusLabel.textContent =
-          'Вы здесь (точность ~' + Math.round(accuracy) + ' м).';
-        setTimeout(() => locateBtn.classList.remove('active'), 500);
+        statusLabel.textContent = 'Вы здесь (точность ~' + Math.round(pos.coords.accuracy) + ' м).';
+        setTimeout(() => locateBtn.classList.remove('active'), 400);
       },
-      (err) => {
+      err => {
         statusLabel.textContent = 'Ошибка геолокации: ' + err.message;
         locateBtn.classList.remove('active');
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy:true, maximumAge:5000, timeout:15000 }
     );
   }
-
   locateBtn.addEventListener('click', locateMe);
 
-  // ---------- КНОПКИ режимов/очистки ----------
+  // --- скрыть/показать UI ---
+  toggleUiBtn.addEventListener('click', () => {
+    uiHidden = !uiHidden;
+    if (uiHidden) {
+      appRoot.classList.add('ui-hidden');
+      toggleUiBtn.textContent = '👁‍🗨';
+    } else {
+      appRoot.classList.remove('ui-hidden');
+      toggleUiBtn.textContent = '👁';
+    }
+  });
+
+  // --- кнопки режимов и очистки ---
   modePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
   modeGpsBtn.addEventListener('click', () => setMode(Mode.GPS));
   clearBtn.addEventListener('click', clearAll);
 
-  map.on('movestart', () => {
-    autoCenter = false;
-  });
+  map.on('movestart', () => { autoCenter = false; });
 </script>
 </body>
 </html>
