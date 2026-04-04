@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Измерение площади и длины (GPS + точки + прицел)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: calc(100% - 150px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Прицел по центру карты */
+    #mapCenterCrosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 44px;
+      margin-left: -22px;
+      margin-top: -22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.8);
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+      pointer-events: none; /* не блокировать клики по карте */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #mapCenterCrosshair::before,
+    #mapCenterCrosshair::after {
+      content: "";
+      position: absolute;
+      background: rgba(120,120,255,0.9);
+    }
+    #mapCenterCrosshair::before {
+      width: 2px;
+      height: 18px;
+    }
+    #mapCenterCrosshair::after {
+      height: 2px;
+      width: 18px;
+    }
+
+    #controls {
+      height: 150px;
+      padding: 8px;
+      box-sizing: border-box;
+      background: #f5f5f5;
+      border-top: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mode-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #888;
+      background: #fff;
+      cursor: pointer;
+    }
+    button.active {
+      background: #0078ff;
+      color: #fff;
+      border-color: #0060c0;
+    }
+    button.danger {
+      background: #d9534f;
+      color: #fff;
+      border-color: #c9302c;
+    }
+    #info {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .label {
+      font-weight: bold;
+    }
+
+    /* Панель кнопок в левом верхнем углу карты (аналог, как на скриншоте) */
+    .top-left-panel {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      gap: 4px;
+    }
+    .top-left-panel button {
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      #map {
+        height: calc(100% - 170px);
+      }
+      #controls {
+        height: 170px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map">
+    <!-- Панель в левом верхнем углу карты -->
+    <div class="top-left-panel">
+      <!-- Кнопка режима "по точкам" (чтобы не тянуться вниз) -->
+      <button id="panelModePointsBtn">Точки</button>
+      <!-- Кнопка "поставить точку по центру" -->
+      <button id="addCenterPointBtn">+</button>
+    </div>
+    <!-- Прицел в центре карты -->
+    <div id="mapCenterCrosshair"></div>
+  </div>
+
+  <div id="controls">
+    <div class="mode-buttons">
+      <button id="modePointsBtn" class="active">Режим: точки</button>
+      <button id="modeGpsBtn">Режим: GPS Tracer</button>
+      <button id="clearBtn" class="danger">Очистить</button>
+    </div>
+    <div id="info">
+      <div><span class="label">Режим:</span> <span id="modeLabel">По точкам (клик по карте или кнопка "+")</span></div>
+      <div><span class="label">Точек:</span> <span id="pointsCount">0</span></div>
+      <div><span class="label">Периметр:</span> <span id="perimeter">0 м</span></div>
+      <div><span class="label">Площадь:</span> <span id="area">0 м²</span></div>
+      <div id="status" style="color:#666;font-size:12px;"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // --------- ИНИЦИАЛИЗАЦИЯ КАРТЫ ----------
+    const map = L.map('map', {
+      center: [55.751244, 37.618423],
+      zoom: 17,
+      zoomControl: true
+    });
+
+    const osm = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }
+    ).addTo(map);
+
+    const esriSat = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      }
+    );
+
+    L.control.layers(
+      { 'OSM карта': osm, 'Спутник Esri': esriSat },
+      null,
+      { position: 'topleft' }
+    ).addTo(map);
+
+    // --------- СОСТОЯНИЕ ----------
+    const Mode = {
+      POINTS: 'points',
+      GPS: 'gps'
+    };
+
+    let currentMode = Mode.POINTS;
+    let points = [];
+    let polyline = null;
+    let polygon = null;
+    let gpsWatchId = null;
+    let autoCenter = true;
+
+    const modePointsBtn = document.getElementById('modePointsBtn');
+    const modeGpsBtn = document.getElementById('modeGpsBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const modeLabel = document.getElementById('modeLabel');
+    const pointsCountLabel = document.getElementById('pointsCount');
+    const perimeterLabel = document.getElementById('perimeter');
+    const areaLabel = document.getElementById('area');
+    const statusLabel = document.getElementById('status');
+
+    const panelModePointsBtn = document.getElementById('panelModePointsBtn');
+    const addCenterPointBtn = document.getElementById('addCenterPointBtn');
+
+    // --------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+    function computePerimeter(latlngs) {
+      if (latlngs.length < 2) return 0;
+      let dist = 0;
+      for (let i = 1; i < latlngs.length; i++) {
+        dist += latlngs[i - 1].distanceTo(latlngs[i]);
+      }
+      if (latlngs.length > 2) {
+        dist += latlngs[latlngs.length - 1].distanceTo(latlngs[0]);
+      }
+      return dist;
+    }
+
+    function computeArea(latlngs) {
+      if (latlngs.length < 3) return 0;
+      const R = 6378137;
+      const refLat = latlngs[0].lat * Math.PI / 180;
+      const refLng = latlngs[0].lng * Math.PI / 180;
+
+      const xy = latlngs.map(p => {
+        const lat = p.lat * Math.PI / 180;
+        const lng = p.lng * Math.PI / 180;
+        const x = (lng - refLng) * Math.cos((lat + refLat) / 2) * R;
+        const y = (lat - refLat) * R;
+        return { x, y };
+      });
+
+      let area = 0;
+      for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) {
+        area += (xy[j].x + xy[i].x) * (xy[j].y - xy[i].y);
+      }
+      return Math.abs(area) / 2;
+    }
+
+    function formatDistance(meters) {
+      if (meters < 1000) return meters.toFixed(1) + ' м';
+      return (meters / 1000).toFixed(2) + ' км';
+    }
+
+    function formatArea(m2) {
+      if (m2 < 1000000) return m2.toFixed(1) + ' м²';
+      return (m2 / 1000000).toFixed(3) + ' км²';
+    }
+
+    function updateMeasurements() {
+      const per = computePerimeter(points);
+      const ar = computeArea(points);
+      pointsCountLabel.textContent = points.length.toString();
+      perimeterLabel.textContent = formatDistance(per);
+      areaLabel.textContent = formatArea(ar);
+    }
+
+    function redrawShapes() {
+      if (polyline) {
+        map.removeLayer(polyline);
+        polyline = null;
+      }
+      if (polygon) {
+        map.removeLayer(polygon);
+        polygon = null;
+      }
+
+      if (points.length > 1) {
+        polyline = L.polyline(points, {
+          color: 'orange',
+          weight: 3
+        }).addTo(map);
+      }
+
+      if (points.length >= 3) {
+        polygon = L.polygon(points, {
+          color: 'red',
+          fillColor: 'yellow',
+          fillOpacity: 0.3,
+          weight: 2
+        }).addTo(map);
+      }
+
+      updateMeasurements();
+    }
+
+    function clearAll() {
+      points = [];
+      redrawShapes();
+      statusLabel.textContent = '';
+    }
+
+    function setMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+
+      if (currentMode === Mode.POINTS) {
+        modePointsBtn.classList.add('active');
+        modeGpsBtn.classList.remove('active');
+        modeLabel.textContent = 'По точкам (клик по карте или кнопка "+")';
+        stopGps();
+      } else {
+        modeGpsBtn.classList.add('active');
+        modePointsBtn.classList.remove('active');
+        modeLabel.textContent = 'GPS Tracer (движение с устройством)';
+        startGps();
+      }
+    }
+
+    // --------- РЕЖИМ ПО ТОЧКАМ (клик по карте) ----------
+    map.on('click', function (e) {
+      if (currentMode !== Mode.POINTS) return;
+      points.push(e.latlng);
+      redrawShapes();
+    });
+
+    // --------- ДОБАВИТЬ ТОЧКУ В ЦЕНТР КАРТЫ ----------
+    function addPointAtMapCenter() {
+      if (currentMode !== Mode.POINTS) {
+        // автоматически переключаемся в режим точек
+        setMode(Mode.POINTS);
+      }
+      const center = map.getCenter();
+      points.push(center);
+      redrawShapes();
+    }
+
+    addCenterPointBtn.addEventListener('click', addPointAtMapCenter);
+
+    // Дублирующая кнопка "Точки" в панели сверху
+    panelModePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
+
+    // --------- GPS TRACER ----------
+    function startGps() {
+      if (!navigator.geolocation) {
+        statusLabel.textContent = 'Геолокация не поддерживается браузером.';
+        return;
+      }
+
+      statusLabel.textContent = 'Запрашиваем доступ к геолокации...';
+
+      // можно не очищать, если хотите совмещать руту и уже поставленные точки
+      // points = [];
+      // redrawShapes();
+
+      gpsWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy;
+
+          const latlng = L.latLng(lat, lng);
+          points.push(latlng);
+          redrawShapes();
+
+          statusLabel.textContent =
+            'GPS активен. Точность: ~' + Math.round(accuracy) + ' м.';
+
+          if (autoCenter) {
+            map.setView(latlng, map.getZoom() < 17 ? 17 : map.getZoom());
+          }
+        },
+        (err) => {
+          statusLabel.textContent = 'Ошибка GPS: ' + err.message;
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 5000,
+          timeout: 20000
+        }
+      );
+    }
+
+    function stopGps() {
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+        statusLabel.textContent = 'GPS выключен.';
+      }
+    }
+
+    // --------- КНОПКИ ВНИЗУ ----------
+    modePointsBtn.addEventListener('click', () => setMode(Mode.POINTS));
+    modeGpsBtn.addEventListener('click', () => setMode(Mode.GPS));
+    clearBtn.addEventListener('click', clearAll);
+
+    map.on('movestart', () => {
+      autoCenter = false;
+    });
+  </script>
+</body>
+</html>
